@@ -1,3 +1,4 @@
+#include<stdio.h>
 #include<math.h>
 #ifdef _OPENMP
 #include<omp.h>
@@ -23,10 +24,42 @@ void Transformer1D::init(int num_in_mesh,
         mesh_func_x_[ix] = mesh_in_func_x[ix];
     }
 
-    z_unit_[0] = cos(2. * M_PI /
-                     static_cast<double>(num_mesh_));
-    z_unit_[1] = sin(2. * M_PI /
-                     static_cast<double>(num_mesh_));
+    initialized_ = true;
+    make();
+
+    return;
+}
+
+void Transformer1D::init(int num_in_mesh,
+                         CNumber (*ptr_in_func_x)(double)) {
+    reset();
+
+    if (num_in_mesh < 2) {
+        return;
+    }
+
+    num_mesh_ = num_in_mesh;
+
+    mesh_func_x_ = new CNumber[num_mesh_];
+    mesh_func_k_ = new CNumber[num_mesh_];
+
+    for (int ix = 0; ix < num_mesh_; ix++) {
+        double x_now =
+            static_cast<double>(ix) /
+            static_cast<double>(num_mesh_);
+        mesh_func_x_[ix] = (*ptr_in_func_x)(x_now);
+    }
+
+    initialized_ = true;
+    make();
+
+    return;
+}
+
+void Transformer1D::make() {
+    if (!initialized_) {
+        return;
+    }
 
     #ifdef _OPENMP
     #pragma omp parallel
@@ -35,15 +68,14 @@ void Transformer1D::init(int num_in_mesh,
         #ifdef _OPENMP
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
-        #else
-        int n_thread = 1;
-        int tid = 0;
         #endif
 
         for (int ik = 0; ik < num_mesh_; ik++) {
-            if (ik % n_thread != 0) {
+            #ifdef _OPENMP
+            if (ik % n_thread != tid) {
                 continue;
             }
+            #endif
 
             mesh_func_k_[ik] = next(ik, num_mesh_,
                                     mesh_func_x_);
@@ -52,7 +84,107 @@ void Transformer1D::init(int num_in_mesh,
     }  // parallel code ends
     #endif
 
-    initialized_ = true;
+    return;
+}
+
+void Transformer1D::shift(double dx) {
+    if (!initialized_) {
+        return;
+    }
+
+    CNumber z_d_unit;
+    z_d_unit[0] = cos(2. * M_PI * dx);
+    z_d_unit[1] = sin(2. * M_PI * dx);
+
+    #ifdef _OPENMP
+    #pragma omp parallel
+    {  // parallel code begins
+    #endif
+        #ifdef _OPENMP
+        int n_thread = omp_get_num_threads();
+        int tid = omp_get_thread_num();
+        #endif
+
+        for (int ik = 0; ik < num_mesh_; ik++) {
+            #ifdef _OPENMP
+            if (ik % n_thread != tid) {
+                continue;
+            }
+            #endif
+
+            mesh_func_k_[ik] =
+                mesh_func_k_[ik] / (z_d_unit ^ ik);
+        }
+    #ifdef _OPENMP
+    }  // parallel code ends
+    #endif
+
+    #ifdef _OPENMP
+    #pragma omp parallel
+    {  // parallel code begins
+    #endif
+        #ifdef _OPENMP
+        int n_thread = omp_get_num_threads();
+        int tid = omp_get_thread_num();
+        #endif
+
+        for (int ix = 0; ix < num_mesh_; ix++) {
+            #ifdef _OPENMP
+            if (ix % n_thread != tid) {
+                continue;
+            }
+            #endif
+
+            double x_now =
+                static_cast<double>(ix) /
+                static_cast<double>(num_mesh_);
+            mesh_func_x_[ix] = get_func_x(x_now);
+        }
+    #ifdef _OPENMP
+    }  // parallel code ends
+    #endif
+
+    return;
+}
+
+void Transformer1D::amplify(double fac) {
+    if (!initialized_) {
+        return;
+    }
+
+    for (int ix = 0; ix < num_mesh_; ix++) {
+        mesh_func_x_[ix] = fac * mesh_func_x_[ix];
+        mesh_func_k_[ix] = fac * mesh_func_k_[ix];
+    }
+
+    return;
+}
+
+void Transformer1D::export_file(std::string name_file) {
+    if (!initialized_) {
+        return;
+    }
+
+    FILE *ptr_fout;
+    ptr_fout = fopen(name_file.c_str(), "w");
+
+    if (ptr_fout == NULL) {
+        return;
+    }
+
+    fprintf(ptr_fout, "# num_mesh_ = %d\n", num_mesh_);
+
+    for (int ik = 0; ik < num_mesh_; ik++) {
+        double x_now = static_cast<double>(ik) /
+                       static_cast<double>(num_mesh_);
+        fprintf(ptr_fout, "    %d    %e    %e", ik,
+                mesh_func_k_[ik][0], mesh_func_k_[ik][1]);
+        fprintf(ptr_fout, "    %e    %e    %e", x_now,
+                mesh_func_x_[ik][0], mesh_func_x_[ik][1]);
+        fprintf(ptr_fout, "\n");
+    }
+
+    fclose(ptr_fout);
 
     return;
 }
