@@ -115,17 +115,10 @@ void Transformer1D::shift(double dx) {
             mesh_func_k_[ik] =
                 mesh_func_k_[ik] / (z_d_unit ^ ik);
         }
-    #ifdef _OPENMP
-    }  // parallel code ends
-    #endif
 
-    #ifdef _OPENMP
-    #pragma omp parallel
-    {  // parallel code begins
-    #endif
         #ifdef _OPENMP
-        int n_thread = omp_get_num_threads();
-        int tid = omp_get_thread_num();
+        // syncronize threads
+        #pragma omp barrier
         #endif
 
         for (int ix = 0; ix < num_mesh_; ix++) {
