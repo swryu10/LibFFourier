@@ -95,6 +95,13 @@ void Transformer1D::shift(double dx) {
     CNumber z_d_unit;
     z_d_unit[0] = cos(2. * M_PI * dx);
     z_d_unit[1] = sin(2. * M_PI * dx);
+    CNumber *list_z_unit = new CNumber[num_mesh_];
+    list_z_unit[0][0] = 1.;
+    list_z_unit[0][1] = 0.;
+    for (int ik = 1; ik < num_mesh_; ik++) {
+        list_z_unit[ik] =
+            list_z_unit[ik - 1] * z_d_unit;
+    }
 
     #ifdef _OPENMP
     #pragma omp parallel
@@ -113,7 +120,7 @@ void Transformer1D::shift(double dx) {
             #endif
 
             mesh_func_k_[ik] =
-                mesh_func_k_[ik] / (z_d_unit ^ ik);
+                mesh_func_k_[ik] / list_z_unit[ik];
         }
 
         #ifdef _OPENMP
@@ -136,6 +143,8 @@ void Transformer1D::shift(double dx) {
     #ifdef _OPENMP
     }  // parallel code ends
     #endif
+
+    delete [] list_z_unit;
 
     return;
 }
