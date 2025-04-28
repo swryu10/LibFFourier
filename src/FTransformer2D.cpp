@@ -20,6 +20,8 @@ void Transformer2D::init(int num_in_mesh_x,
 
     num_mesh_x_ = num_in_mesh_x;
     num_mesh_y_ = num_in_mesh_y;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
 
     mesh_func_rx_ry_ = new CNumber *[num_mesh_x_];
     mesh_func_kx_ky_ = new CNumber *[num_mesh_x_];
@@ -52,6 +54,8 @@ void Transformer2D::init(int num_in_mesh_x,
 
     num_mesh_x_ = num_in_mesh_x;
     num_mesh_y_ = num_in_mesh_y;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
 
     mesh_func_rx_ry_ = new CNumber *[num_mesh_x_];
     mesh_func_kx_ky_ = new CNumber *[num_mesh_x_];
@@ -117,108 +121,6 @@ void Transformer2D::make() {
     return;
 }
 
-void Transformer2D::shift(double dx, double dy) {
-    if (!initialized_) {
-        return;
-    }
-
-    CNumber zx_d_unit;
-    zx_d_unit[0] = cos(2. * M_PI * dx);
-    zx_d_unit[1] = sin(2. * M_PI * dx);
-    CNumber *list_zx_unit = new CNumber[num_mesh_x_];
-    list_zx_unit[0][0] = 1.;
-    list_zx_unit[0][1] = 0.;
-    for (int ikx = 1; ikx < num_mesh_x_; ikx++) {
-        list_zx_unit[ikx] =
-            list_zx_unit[ikx - 1] * zx_d_unit;
-    }
-
-    CNumber zy_d_unit;
-    zy_d_unit[0] = cos(2. * M_PI * dy);
-    zy_d_unit[1] = sin(2. * M_PI * dy);
-    CNumber *list_zy_unit = new CNumber[num_mesh_y_];
-    list_zy_unit[0][0] = 1.;
-    list_zy_unit[0][1] = 0.;
-    for (int iky = 1; iky < num_mesh_y_; iky++) {
-        list_zy_unit[iky] =
-            list_zy_unit[iky - 1] * zy_d_unit;
-    }
-
-    #ifdef _OPENMP
-    #pragma omp parallel
-    {  // parallel code begins
-    #endif
-        #ifdef _OPENMP
-        int n_thread = omp_get_num_threads();
-        int tid = omp_get_thread_num();
-        #endif
-
-        for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
-            #ifdef _OPENMP
-            if (ikx % n_thread != tid) {
-                continue;
-            }
-            #endif
-
-            for (int iky = 0; iky < num_mesh_y_; iky++) {
-                mesh_func_kx_ky_[ikx][iky] =
-                    mesh_func_kx_ky_[ikx][iky] /
-                    (list_zx_unit[ikx] * list_zy_unit[iky]);
-            }
-        }
-
-        #ifdef _OPENMP
-        // syncronize threads
-        #pragma omp barrier
-        #endif
-
-        for (int irx = 0; irx < num_mesh_x_; irx++) {
-            #ifdef _OPENMP
-            if (irx % n_thread != tid) {
-                continue;
-            }
-            #endif
-
-            double x_now =
-                static_cast<double>(irx) /
-                static_cast<double>(num_mesh_x_);
-
-            for (int iry = 0; iry < num_mesh_y_; iry++) {
-                double y_now =
-                    static_cast<double>(iry) /
-                    static_cast<double>(num_mesh_y_);
-
-                mesh_func_rx_ry_[irx][iry] =
-                    get_func_rx_ry(x_now, y_now);
-            }
-        }
-    #ifdef _OPENMP
-    }  // parallel code ends
-    #endif
-
-    delete [] list_zx_unit;
-    delete [] list_zy_unit;
-
-    return;
-}
-
-void Transformer2D::amplify(double fac) {
-    if (!initialized_) {
-        return;
-    }
-
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        for (int iry = 0; iry < num_mesh_y_; iry++) {
-            mesh_func_rx_ry_[irx][iry] =
-                fac * mesh_func_rx_ry_[irx][iry];
-            mesh_func_kx_ky_[irx][iry] =
-                fac * mesh_func_kx_ky_[irx][iry];
-        }
-    }
-
-    return;
-}
-
 void Transformer2D::reset() {
     if (!initialized_) {
         return;
@@ -279,7 +181,7 @@ CNumber Transformer2D::get_func_rx_ry(double x_in,
     delete [] list_zx_unit;
     delete [] list_zy_unit;
 
-    return cnum_ret / static_cast<double>(num_mesh_x_ * num_mesh_y_);
+    return factor_inv_ * cnum_ret;
 }
 
 } // end namespace FFourier

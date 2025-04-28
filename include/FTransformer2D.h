@@ -15,6 +15,8 @@ class Transformer2D {
     CNumber **mesh_func_rx_ry_;
     CNumber **mesh_func_kx_ky_;
 
+    double factor_inv_;
+
     bool initialized_;
 
   public :
@@ -40,10 +42,6 @@ class Transformer2D {
                                            double));
 
     void make();
-
-    void shift(double dx, double dy);
-
-    void amplify(double fac);
 
     void reset();
 

@@ -14,6 +14,8 @@ class Transformer1D {
     CNumber *mesh_func_x_;
     CNumber *mesh_func_k_;
 
+    double factor_inv_;
+
     bool initialized_;
 
   public :

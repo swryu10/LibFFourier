@@ -16,6 +16,8 @@ void Transformer1D::init(int num_in_mesh,
     }
 
     num_mesh_ = num_in_mesh;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_);
 
     mesh_func_x_ = new CNumber[num_mesh_];
     mesh_func_k_ = new CNumber[num_mesh_];
@@ -39,6 +41,8 @@ void Transformer1D::init(int num_in_mesh,
     }
 
     num_mesh_ = num_in_mesh;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_);
 
     mesh_func_x_ = new CNumber[num_mesh_];
     mesh_func_k_ = new CNumber[num_mesh_];
@@ -283,7 +287,7 @@ CNumber Transformer1D::get_func_x(double x_in) {
             (mesh_func_k_[ik] * (z_in_unit ^ ik));
     }
 
-    return cnum_ret / static_cast<double>(num_mesh_);
+    return factor_inv_ * cnum_ret;
 }
 
 } // end namespace FFourier
