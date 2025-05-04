@@ -2,13 +2,13 @@
 #include<string>
 #include"FTransformer1D.h"
 
-int n_mesh = 128;
+int n_mesh = 16;
 double width_signal = 0.2;
-double shift_signal = 0.25;
-double factor_amplify = 1.5;
 CNumber signal_rectangle(double x);
 CNumber signal_gaussians(double x);
 CNumber signal_multi_tri(double x);
+
+int n_pt = 256;
 
 int main(int argc, char *argv[]) {
     CNumber (*ptr_func_x)(double);
@@ -18,17 +18,15 @@ int main(int argc, char *argv[]) {
         "tab1D_signal_rectangle.txt";
     ptr_func_x = &signal_rectangle;
     dft.init(n_mesh, ptr_func_x);
-    dft.shift(shift_signal);
-    dft.amplify(factor_amplify);
-    dft.export_file(name_rectangle);
+    dft.export_func_x(name_rectangle, n_pt,
+                      ptr_func_x);
 
     std::string name_gaussians =
         "tab1D_signal_gaussians.txt";
     ptr_func_x = &signal_gaussians;
     dft.init(n_mesh, ptr_func_x);
-    dft.shift(shift_signal);
-    dft.amplify(factor_amplify);
-    dft.export_file(name_gaussians);
+    dft.export_func_x(name_gaussians, n_pt,
+                      ptr_func_x);
 
     ptr_func_x = &signal_multi_tri;
     dft.init(n_mesh, ptr_func_x);
@@ -40,6 +38,7 @@ int main(int argc, char *argv[]) {
         fprintf(stdout, "    %d    %e    %e\n",
                 ik, func_k[0], func_k[1]);
     }
+
     return 0;
 }
 
@@ -61,7 +60,7 @@ CNumber signal_gaussians(double x) {
     CNumber cnum_ret;
     cnum_ret[1] = 0.;
 
-    cnum_ret[0] = 0.5 *
+    cnum_ret[0] =
         (exp(-0.5 * x * x / (width_signal * width_signal)) +
          exp(-0.5 * (1. - x) * (1. - x) /
                     (width_signal * width_signal)));

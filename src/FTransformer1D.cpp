@@ -91,82 +91,9 @@ void Transformer1D::make() {
     return;
 }
 
-void Transformer1D::shift(double dx) {
-    if (!initialized_) {
-        return;
-    }
-
-    CNumber z_d_unit;
-    z_d_unit[0] = cos(2. * M_PI * dx);
-    z_d_unit[1] = sin(2. * M_PI * dx);
-    CNumber *list_z_unit = new CNumber[num_mesh_];
-    list_z_unit[0][0] = 1.;
-    list_z_unit[0][1] = 0.;
-    for (int ik = 1; ik < num_mesh_; ik++) {
-        list_z_unit[ik] =
-            list_z_unit[ik - 1] * z_d_unit;
-    }
-
-    #ifdef _OPENMP
-    #pragma omp parallel
-    {  // parallel code begins
-    #endif
-        #ifdef _OPENMP
-        int n_thread = omp_get_num_threads();
-        int tid = omp_get_thread_num();
-        #endif
-
-        for (int ik = 0; ik < num_mesh_; ik++) {
-            #ifdef _OPENMP
-            if (ik % n_thread != tid) {
-                continue;
-            }
-            #endif
-
-            mesh_func_k_[ik] =
-                mesh_func_k_[ik] / list_z_unit[ik];
-        }
-
-        #ifdef _OPENMP
-        // syncronize threads
-        #pragma omp barrier
-        #endif
-
-        for (int ix = 0; ix < num_mesh_; ix++) {
-            #ifdef _OPENMP
-            if (ix % n_thread != tid) {
-                continue;
-            }
-            #endif
-
-            double x_now =
-                static_cast<double>(ix) /
-                static_cast<double>(num_mesh_);
-            mesh_func_x_[ix] = get_func_x(x_now);
-        }
-    #ifdef _OPENMP
-    }  // parallel code ends
-    #endif
-
-    delete [] list_z_unit;
-
-    return;
-}
-
-void Transformer1D::amplify(double fac) {
-    if (!initialized_) {
-        return;
-    }
-
-    for (int ix = 0; ix < num_mesh_; ix++) {
-        mesh_func_x_[ix] = fac * mesh_func_x_[ix];
-        mesh_func_k_[ix] = fac * mesh_func_k_[ix];
-    }
-
-    return;
-}
-
-void Transformer1D::export_file(std::string name_file) {
+void Transformer1D::export_func_x(std::string name_file,
+                                  int num_in_pt_x,
+                                  CNumber (*ptr_func_x)(double)) {
     if (!initialized_) {
         return;
     }
@@ -178,15 +105,21 @@ void Transformer1D::export_file(std::string name_file) {
         return;
     }
 
-    fprintf(ptr_fout, "# num_mesh_ = %d\n", num_mesh_);
+    fprintf(ptr_fout, "# num_point = %d\n", num_in_pt_x);
 
-    for (int ik = 0; ik < num_mesh_; ik++) {
-        double x_now = static_cast<double>(ik) /
-                       static_cast<double>(num_mesh_);
-        fprintf(ptr_fout, "    %d    %e    %e", ik,
-                mesh_func_k_[ik][0], mesh_func_k_[ik][1]);
-        fprintf(ptr_fout, "    %e    %e    %e", x_now,
-                mesh_func_x_[ik][0], mesh_func_x_[ik][1]);
+    for (int ix = 0; ix < num_in_pt_x; ix++) {
+        double x_now = static_cast<double>(ix) /
+                       static_cast<double>(num_in_pt_x);
+        fprintf(ptr_fout, "    %d    %e",
+                ix, x_now);
+        CNumber cnum_func_dft = get_func_x(x_now);
+        fprintf(ptr_fout, "    %e    %e",
+                cnum_func_dft[0], cnum_func_dft[1]);
+        if (ptr_func_x != NULL) {
+            CNumber cnum_func_ini = (*ptr_func_x)(x_now);
+            fprintf(ptr_fout, "    %e    %e",
+                cnum_func_ini[0], cnum_func_ini[1]);
+        }
         fprintf(ptr_fout, "\n");
     }
 
@@ -283,8 +216,12 @@ CNumber Transformer1D::get_func_x(double x_in) {
     cnum_ret[1] = 0.;
 
     for (int ik = 0; ik < num_mesh_; ik++) {
+        int jk = ik;
+        if (2 * ik >= num_mesh_) {
+            jk = ik - num_mesh_;
+        }
         cnum_ret = cnum_ret +
-            (mesh_func_k_[ik] * (z_in_unit ^ ik));
+            (mesh_func_k_[ik] * (z_in_unit ^ jk));
     }
 
     return factor_inv_ * cnum_ret;

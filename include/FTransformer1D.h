@@ -39,11 +39,9 @@ class Transformer1D {
 
     void make();
 
-    void shift(double dx);
-
-    void amplify(double fac);
-
-    void export_file(std::string name_file);
+    void export_func_x(std::string name_file,
+                       int num_in_pt,
+                       CNumber (*ptr_func_x)(double) = NULL);
 
     void reset();
 
@@ -51,9 +49,15 @@ class Transformer1D {
                  CNumber *mesh_in_func_x);
 
     CNumber get_func_x(double x_in);
-    CNumber get_func_x(int ix) {return mesh_func_x_[ix];}
+    CNumber get_func_x(int ix) {
+        int jx = (ix + num_mesh_) % num_mesh_;
+        return mesh_func_x_[jx];
+    }
 
-    CNumber get_func_k(int ik) {return mesh_func_k_[ik];}
+    CNumber get_func_k(int ik) {
+        int jk = (ik + num_mesh_) % num_mesh_;
+        return mesh_func_k_[jk];
+    }
 };
 
 } // end namespace FFourier
