@@ -91,9 +91,9 @@ void Transformer1D::make() {
     return;
 }
 
-void Transformer1D::export_func_x(std::string name_file,
+void Transformer1D::export_func_r(std::string name_file,
                                   int num_in_pt_x,
-                                  CNumber (*ptr_func_x)(double)) {
+                                  CNumber (*ptr_in_func_x)(double)) {
     if (!initialized_) {
         return;
     }
@@ -110,13 +110,12 @@ void Transformer1D::export_func_x(std::string name_file,
     for (int ix = 0; ix < num_in_pt_x; ix++) {
         double x_now = static_cast<double>(ix) /
                        static_cast<double>(num_in_pt_x);
-        fprintf(ptr_fout, "    %d    %e",
-                ix, x_now);
-        CNumber cnum_func_dft = get_func_x(x_now);
+        fprintf(ptr_fout, "    %e", x_now);
+        CNumber cnum_func_dft = get_func_r(x_now);
         fprintf(ptr_fout, "    %e    %e",
                 cnum_func_dft[0], cnum_func_dft[1]);
-        if (ptr_func_x != NULL) {
-            CNumber cnum_func_ini = (*ptr_func_x)(x_now);
+        if (ptr_in_func_x != NULL) {
+            CNumber cnum_func_ini = (*ptr_in_func_x)(x_now);
             fprintf(ptr_fout, "    %e    %e",
                 cnum_func_ini[0], cnum_func_ini[1]);
         }
@@ -206,7 +205,7 @@ CNumber Transformer1D::next(int ik, int num_in_mesh,
     return cnum_ret;
 }
 
-CNumber Transformer1D::get_func_x(double x_in) {
+CNumber Transformer1D::get_func_r(double x_in) {
     CNumber z_in_unit;
     z_in_unit[0] = cos(2. * M_PI * x_in);
     z_in_unit[1] = sin(2. * M_PI * x_in);

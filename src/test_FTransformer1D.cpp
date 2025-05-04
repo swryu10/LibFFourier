@@ -18,14 +18,14 @@ int main(int argc, char *argv[]) {
         "tab1D_signal_rectangle.txt";
     ptr_func_x = &signal_rectangle;
     dft.init(n_mesh, ptr_func_x);
-    dft.export_func_x(name_rectangle, n_pt,
+    dft.export_func_r(name_rectangle, n_pt,
                       ptr_func_x);
 
     std::string name_gaussians =
         "tab1D_signal_gaussians.txt";
     ptr_func_x = &signal_gaussians;
     dft.init(n_mesh, ptr_func_x);
-    dft.export_func_x(name_gaussians, n_pt,
+    dft.export_func_r(name_gaussians, n_pt,
                       ptr_func_x);
 
     ptr_func_x = &signal_multi_tri;

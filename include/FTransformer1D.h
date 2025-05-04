@@ -39,17 +39,17 @@ class Transformer1D {
 
     void make();
 
-    void export_func_x(std::string name_file,
+    void export_func_r(std::string name_file,
                        int num_in_pt,
-                       CNumber (*ptr_func_x)(double) = NULL);
+                       CNumber (*ptr_in_func_x)(double) = NULL);
 
     void reset();
 
     CNumber next(int ik, int num_in_mesh,
                  CNumber *mesh_in_func_x);
 
-    CNumber get_func_x(double x_in);
-    CNumber get_func_x(int ix) {
+    CNumber get_func_r(double x_in);
+    CNumber get_func_r(int ix) {
         int jx = (ix + num_mesh_) % num_mesh_;
         return mesh_func_x_[jx];
     }

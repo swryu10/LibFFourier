@@ -12,8 +12,11 @@ class Transformer2D {
     int num_mesh_x_;
     int num_mesh_y_;
 
-    CNumber **mesh_func_rx_ry_;
-    CNumber **mesh_func_kx_ky_;
+    int num_mmid_x_;
+    int num_mmid_y_;
+
+    CNumber **mesh_func_r_;
+    CNumber **mesh_func_k_;
 
     double factor_inv_;
 
@@ -35,24 +38,33 @@ class Transformer2D {
 
     void init(int num_in_mesh_x,
               int num_in_mesh_y,
-              CNumber **mesh_in_func_rx_ry);
+              CNumber **mesh_in_func_r);
     void init(int num_in_mesh_x,
               int num_in_mesh_y,
-              CNumber (*ptr_in_func_rx_ry)(double,
-                                           double));
+              CNumber (*ptr_in_func_r)(double,
+                                       double));
 
     void make();
 
+    void export_func_r(std::string name_file,
+                       int num_in_pt_x, int num_in_pt_y,
+                       CNumber (*ptr_in_func_r)(double,
+                                                double) = NULL);
+
     void reset();
 
-    CNumber get_func_rx_ry(double x_in,
-                           double y_in);
-    CNumber get_func_rx_ry(int irx, int iry) {
-        return mesh_func_rx_ry_[irx][iry];
+    CNumber get_func_r(double x_in,
+                       double y_in);
+    CNumber get_func_r(int irx, int iry) {
+        int jrx = (irx + num_mesh_x_) % num_mesh_x_;
+        int jry = (iry + num_mesh_y_) % num_mesh_y_;
+        return mesh_func_r_[jrx][jry];
     }
 
-    CNumber get_func_kx_ky(int ikx, int iky) {
-        return mesh_func_kx_ky_[ikx][iky];
+    CNumber get_func_k(int ikx, int iky) {
+        int jkx = (ikx + num_mesh_x_) % num_mesh_x_;
+        int jky = (iky + num_mesh_y_) % num_mesh_y_;
+        return mesh_func_k_[jkx][jky];
     }
 };
 
