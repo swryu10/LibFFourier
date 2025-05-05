@@ -98,6 +98,10 @@ void Transformer1D::export_func_r(std::string name_file,
         return;
     }
 
+    if (ParallelMPI::rank_ != 0) {
+        return;
+    }
+
     FILE *ptr_fout;
     ptr_fout = fopen(name_file.c_str(), "w");
 

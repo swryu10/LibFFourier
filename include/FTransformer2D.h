@@ -2,6 +2,7 @@
 #define _FTRANSFORMER2D_H_
 
 #include<string>
+#include"Parallel.h"
 #include"CNumber.h"
 
 namespace FFourier {

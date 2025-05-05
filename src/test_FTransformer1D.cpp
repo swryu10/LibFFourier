@@ -11,6 +11,10 @@ CNumber signal_multi_tri(double x);
 int n_pt = 256;
 
 int main(int argc, char *argv[]) {
+    ParallelMPI::func_ini(argc, argv);
+    fprintf(stdout, "MPI : size = %d, rank = %d\n",
+            ParallelMPI::size_, ParallelMPI::rank_);
+
     CNumber (*ptr_func_x)(double);
     FFourier::Transformer1D dft;
 
@@ -31,13 +35,17 @@ int main(int argc, char *argv[]) {
     ptr_func_x = &signal_multi_tri;
     dft.init(n_mesh, ptr_func_x);
 
-    fprintf(stdout, "# n_mesh = %d\n", n_mesh);
-    for (int ik = 0; ik < n_mesh; ik++) {
-        CNumber func_k =
-            dft.get_func_k(ik);
-        fprintf(stdout, "    %d    %e    %e\n",
-                ik, func_k[0], func_k[1]);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "# n_mesh = %d\n", n_mesh);
+        for (int ik = 0; ik < n_mesh; ik++) {
+            CNumber func_k =
+                dft.get_func_k(ik);
+            fprintf(stdout, "    %d    %e    %e\n",
+                    ik, func_k[0], func_k[1]);
+        }
     }
+
+    ParallelMPI::func_fin();
 
     return 0;
 }

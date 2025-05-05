@@ -19,6 +19,10 @@ int n_pt_x = 64;
 int n_pt_y = 64;
 
 int main(int argc, char *argv[]) {
+    ParallelMPI::func_ini(argc, argv);
+    fprintf(stdout, "MPI : size = %d, rank = %d\n",
+            ParallelMPI::size_, ParallelMPI::rank_);
+
     CNumber (*ptr_func_r)(double, double, double);
     FFourier::Transformer3D dft;
 
@@ -65,6 +69,8 @@ int main(int argc, char *argv[]) {
             }
         }
     }
+
+    ParallelMPI::func_fin();
 
     return 0;
 }

@@ -170,6 +170,10 @@ void Transformer3D::export_func_r(std::string name_file,
         return;
     }
 
+    if (ParallelMPI::rank_ != 0) {
+        return;
+    }
+
     if (num_in_pt_x < 2 ||
         num_in_pt_y < 2) {
         return;
