@@ -23,6 +23,9 @@ void Transformer2D::init(int num_in_mesh_x,
     factor_inv_ =
         1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
 
+    num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
+    num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
+
     mesh_func_r_ = new CNumber *[num_mesh_x_];
     mesh_func_k_ = new CNumber *[num_mesh_x_];
     for (int irx = 0; irx < num_mesh_x_; irx++) {

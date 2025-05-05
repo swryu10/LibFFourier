@@ -8,7 +8,8 @@ endif()
 add_library(FFourier STATIC)
 target_sources(FFourier PUBLIC ${PROJECT_SOURCE_DIR}/src/CNumber.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
-                               ${PROJECT_SOURCE_DIR}/src/FTransformer2D.cpp)
+                               ${PROJECT_SOURCE_DIR}/src/FTransformer2D.cpp
+                               ${PROJECT_SOURCE_DIR}/src/FTransformer3D.cpp)
 target_include_directories(FFourier PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 project(test_FTransformer1D)
