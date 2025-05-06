@@ -1,6 +1,9 @@
 #ifndef _PARALLEL_H_
 #define _PARALLEL_H_
 
+#ifdef _OPENMP
+#include<omp.h>
+#endif
 #ifdef _MPI
 #include<mpi.h>
 #endif

@@ -1,8 +1,5 @@
 #include<stdio.h>
 #include<string>
-#ifdef _OPENMP
-#include<omp.h>
-#endif
 #include"FTransformer3D.h"
 
 int n_mesh_z = 16;
