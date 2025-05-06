@@ -11,6 +11,7 @@ class Transformer1D {
   private :
 
     int num_mesh_;
+    int *list_num_mesh_pr_;
 
     CNumber *mesh_func_x_;
     CNumber *mesh_func_k_;
@@ -51,11 +52,27 @@ class Transformer1D {
 
     CNumber get_func_r(double x_in);
     CNumber get_func_r(int ix) {
+        if (ParallelMPI::rank_ != 0) {
+            CNumber cnum_ret;
+            cnum_ret[0] = 0.;
+            cnum_ret[1] = 0.;
+
+            return cnum_ret;
+        }
+
         int jx = (ix + num_mesh_) % num_mesh_;
         return mesh_func_x_[jx];
     }
 
     CNumber get_func_k(int ik) {
+        if (ParallelMPI::rank_ != 0) {
+            CNumber cnum_ret;
+            cnum_ret[0] = 0.;
+            cnum_ret[1] = 0.;
+
+            return cnum_ret;
+        }
+
         int jk = (ik + num_mesh_) % num_mesh_;
         return mesh_func_k_[jk];
     }
