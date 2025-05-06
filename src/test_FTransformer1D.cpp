@@ -12,8 +12,10 @@ int n_pt = 256;
 
 int main(int argc, char *argv[]) {
     ParallelMPI::func_ini(argc, argv);
+    #ifdef _MPI
     fprintf(stdout, "MPI : size = %d, rank = %d\n",
             ParallelMPI::size_, ParallelMPI::rank_);
+    #endif
 
     CNumber (*ptr_func_x)(double);
     FFourier::Transformer1D dft;
@@ -84,9 +86,9 @@ CNumber signal_multi_tri(double x) {
     for (int i = 0; i < 5; i++) {
         double iid = static_cast<double>(i + 1);
         cnum_ret[0] +=
-            iid * cos(2. * M_PI * 10. * iid * x);
+            iid * cos(2. * M_PI * 2. * iid * x);
         cnum_ret[1] +=
-            iid * sin(2. * M_PI * 10. * iid * x);
+            iid * sin(2. * M_PI * 2. * iid * x);
     }
 
     return cnum_ret;
