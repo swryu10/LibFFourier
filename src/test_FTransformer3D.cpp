@@ -17,13 +17,17 @@ int n_pt_y = 64;
 
 int main(int argc, char *argv[]) {
     ParallelMPI::func_ini(argc, argv);
+    #ifdef _MPI
     fprintf(stdout, "MPI : size = %d, rank = %d\n",
             ParallelMPI::size_, ParallelMPI::rank_);
+    #endif
 
     CNumber (*ptr_func_r)(double, double, double);
     FFourier::Transformer3D dft;
 
-    fprintf(stdout, "  signal_rectangle\n");
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_rectangle\n");
+    }
     ptr_func_r = &signal_rectangle;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
@@ -34,7 +38,9 @@ int main(int argc, char *argv[]) {
                       0, 0.15,
                       ptr_func_r);
 
-    fprintf(stdout, "  signal_gaussians\n");
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_gaussians\n");
+    }
     ptr_func_r = &signal_gaussians;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
@@ -45,23 +51,27 @@ int main(int argc, char *argv[]) {
                       0, 0.15,
                       ptr_func_r);
 
-    fprintf(stdout, "  signal_multi_tri\n");
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_multi_tri\n");
+    }
     ptr_func_r = &signal_multi_tri;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
-    for (int ikz = 0; ikz < n_mesh_z; ikz++) {
-        for (int ikx = 0; ikx < n_mesh_x; ikx++) {
-            for (int iky = 0; iky < n_mesh_y; iky++) {
-                CNumber func_k =
-                    dft.get_func_k(ikz, ikx, iky);
+    if (ParallelMPI::rank_ == 0) {
+        for (int ikz = 0; ikz < n_mesh_z; ikz++) {
+            for (int ikx = 0; ikx < n_mesh_x; ikx++) {
+                for (int iky = 0; iky < n_mesh_y; iky++) {
+                    CNumber func_k =
+                        dft.get_func_k(ikz, ikx, iky);
 
-                if (func_k.get_abs() > 1.0e-2) {
-                    fprintf(stdout,
-                            "    ikx = %d, iky = %d\n",
-                            ikx, iky);
-                    fprintf(stdout,
-                            "      func_k = (%e, %e)\n",
-                            func_k[0], func_k[1]);
+                    if (func_k.get_abs() > 1.0e-2) {
+                        fprintf(stdout,
+                                "    ikx = %d, iky = %d\n",
+                                ikx, iky);
+                        fprintf(stdout,
+                                "      func_k = (%e, %e)\n",
+                                func_k[0], func_k[1]);
+                    }
                 }
             }
         }

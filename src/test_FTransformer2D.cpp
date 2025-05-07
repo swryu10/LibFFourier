@@ -2,21 +2,23 @@
 #include<string>
 #include"FTransformer2D.h"
 
-int n_mesh_x = 32;
-int n_mesh_y = 32;
+int n_mesh_x = 16;
+int n_mesh_y = 16;
 double width_signal_x = 0.2;
 double width_signal_y = 0.25;
 CNumber signal_rectangle(double x, double y);
 CNumber signal_gaussians(double x, double y);
 CNumber signal_multi_tri(double x, double y);
 
-int n_pt_x = 128;
-int n_pt_y = 128;
+int n_pt_x = 64;
+int n_pt_y = 64;
 
 int main(int argc, char *argv[]) {
     ParallelMPI::func_ini(argc, argv);
+    #ifdef _MPI
     fprintf(stdout, "MPI : size = %d, rank = %d\n",
             ParallelMPI::size_, ParallelMPI::rank_);
+    #endif
 
     CNumber (*ptr_func_r)(double, double);
     FFourier::Transformer2D dft;

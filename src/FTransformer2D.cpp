@@ -100,8 +100,13 @@ void Transformer2D::make() {
         new Transformer1D [num_mesh_x_]();
 
     for (int irx = 0; irx < num_mesh_x_; irx++) {
+        CNumber *ptr_mesh_fn_y = NULL;
+        if (ParallelMPI::rank_ == 0) {
+            ptr_mesh_fn_y = mesh_func_r_[irx];
+        }
+
         ptr_dft_x[irx].init(num_mesh_y_,
-                            mesh_func_r_[irx]);
+                            ptr_mesh_fn_y);
 
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
@@ -183,8 +188,8 @@ void Transformer2D::export_func_r(std::string name_file,
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
         /*
-        fprintf(stdout, "Transformer2D : OPENMP : ");
-        fprintf(stdout, "n_thread = %d, tid = %d\n",
+        fprintf(stdout, "Transformer2D:make\n");
+        fprintf(stdout, "  OPENMP : n_thread = %d, tid = %d\n",
                 n_thread, tid);
         */
         #endif

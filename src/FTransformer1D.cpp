@@ -148,8 +148,11 @@ void Transformer1D::make() {
         #ifdef _OPENMP
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
-        fprintf(stdout, "OPENMP : n_thread = %d, tid = %d\n",
+        /*
+        fprintf(stdout, "Transformer1D:make\n");
+        fprintf(stdout, "  OPENMP : n_thread = %d, tid = %d\n",
                 n_thread, tid);
+        */
         #endif
 
         for (int ikpr = 0; ikpr < num_mesh_pr; ikpr++) {
