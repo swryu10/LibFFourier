@@ -134,7 +134,7 @@ void Transformer3D::make() {
 
         ptr_dft_xy[irz].init(num_mesh_x_,
                              num_mesh_y_,
-                             mesh_func_r_[irz]);
+                             ptr_mesh_fn_xy);
 
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
