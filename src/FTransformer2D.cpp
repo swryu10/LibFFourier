@@ -23,15 +23,17 @@ void Transformer2D::init(int num_in_mesh_x,
     num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
     num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
 
-    mesh_func_r_ = new CNumber *[num_mesh_x_];
-    mesh_func_k_ = new CNumber *[num_mesh_x_];
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        mesh_func_r_[irx] = new CNumber[num_mesh_y_];
-        mesh_func_k_[irx] = new CNumber[num_mesh_y_];
+    if (ParallelMPI::rank_ == 0) {
+        mesh_func_r_ = new CNumber *[num_mesh_x_];
+        mesh_func_k_ = new CNumber *[num_mesh_x_];
+        for (int irx = 0; irx < num_mesh_x_; irx++) {
+            mesh_func_r_[irx] = new CNumber[num_mesh_y_];
+            mesh_func_k_[irx] = new CNumber[num_mesh_y_];
 
-        for (int iry = 0; iry < num_mesh_y_; iry++) {
-            mesh_func_r_[irx][iry] =
-                mesh_in_func_r[irx][iry];
+            for (int iry = 0; iry < num_mesh_y_; iry++) {
+                mesh_func_r_[irx][iry] =
+                    mesh_in_func_r[irx][iry];
+            }
         }
     }
 
@@ -63,21 +65,23 @@ void Transformer2D::init(int num_in_mesh_x,
     double nd_mesh_x = static_cast<double>(num_mesh_x_);
     double nd_mesh_y = static_cast<double>(num_mesh_y_);
 
-    mesh_func_r_ = new CNumber *[num_mesh_x_];
-    mesh_func_k_ = new CNumber *[num_mesh_x_];
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        mesh_func_r_[irx] = new CNumber[num_mesh_y_];
-        mesh_func_k_[irx] = new CNumber[num_mesh_y_];
+    if (ParallelMPI::rank_ == 0) {
+        mesh_func_r_ = new CNumber *[num_mesh_x_];
+        mesh_func_k_ = new CNumber *[num_mesh_x_];
+        for (int irx = 0; irx < num_mesh_x_; irx++) {
+            mesh_func_r_[irx] = new CNumber[num_mesh_y_];
+            mesh_func_k_[irx] = new CNumber[num_mesh_y_];
 
-        double x_now =
-            static_cast<double>(irx) / nd_mesh_x;
+            double x_now =
+                static_cast<double>(irx) / nd_mesh_x;
 
-        for (int iry = 0; iry < num_mesh_y_; iry++) {
-            double y_now =
-                static_cast<double>(iry) / nd_mesh_y;
+            for (int iry = 0; iry < num_mesh_y_; iry++) {
+                double y_now =
+                    static_cast<double>(iry) / nd_mesh_y;
 
-            mesh_func_r_[irx][iry] =
-                (*ptr_in_func_r)(x_now, y_now);
+                mesh_func_r_[irx][iry] =
+                    (*ptr_in_func_r)(x_now, y_now);
+            }
         }
     }
 
@@ -98,23 +102,35 @@ void Transformer2D::make() {
     for (int irx = 0; irx < num_mesh_x_; irx++) {
         ptr_dft_x[irx].init(num_mesh_y_,
                             mesh_func_r_[irx]);
+
+        #ifdef _MPI
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
     }
 
     Transformer1D dft_all;
     CNumber *mesh_func_x = new CNumber [num_mesh_x_];
 
     for (int iky = 0; iky < num_mesh_y_; iky++) {
-        for (int irx = 0; irx < num_mesh_x_; irx++) {
-            mesh_func_x[irx] =
-                ptr_dft_x[irx].get_func_k(iky);
+        if (ParallelMPI::rank_ == 0) {
+            for (int irx = 0; irx < num_mesh_x_; irx++) {
+                mesh_func_x[irx] =
+                    ptr_dft_x[irx].get_func_k(iky);
+            }
         }
 
         dft_all.init(num_mesh_x_,
                      mesh_func_x);
 
-        for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
-            mesh_func_k_[ikx][iky] =
-                dft_all.get_func_k(ikx);
+        #ifdef _MPI
+        MPI_Barrier(MPI_COMM_WORLD);
+        #endif
+
+        if (ParallelMPI::rank_ == 0) {
+            for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
+                mesh_func_k_[ikx][iky] =
+                    dft_all.get_func_k(ikx);
+            }
         }
     }
 
@@ -166,6 +182,11 @@ void Transformer2D::export_func_r(std::string name_file,
         #ifdef _OPENMP
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
+        /*
+        fprintf(stdout, "Transformer2D : OPENMP : ");
+        fprintf(stdout, "n_thread = %d, tid = %d\n",
+                n_thread, tid);
+        */
         #endif
 
         for (int ix = 0; ix < num_in_pt_x; ix++) {
@@ -236,13 +257,15 @@ void Transformer2D::reset() {
         return;
     }
 
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        delete [] mesh_func_r_[irx];
-        delete [] mesh_func_k_[irx];
-    }
+    if (ParallelMPI::rank_ == 0) {
+        for (int irx = 0; irx < num_mesh_x_; irx++) {
+            delete [] mesh_func_r_[irx];
+            delete [] mesh_func_k_[irx];
+        }
 
-    delete [] mesh_func_r_;
-    delete [] mesh_func_k_;
+        delete [] mesh_func_r_;
+        delete [] mesh_func_k_;
+    }
 
     num_mesh_x_ = 0;
     num_mesh_y_ = 0;
@@ -257,6 +280,14 @@ void Transformer2D::reset() {
 
 CNumber Transformer2D::get_func_r(double x_in,
                                   double y_in) {
+    CNumber cnum_ret;
+    cnum_ret[0] = 0.;
+    cnum_ret[1] = 0.;
+
+    if (ParallelMPI::rank_ != 0) {
+        return cnum_ret;
+    }
+
     CNumber zx_in_unit;
     zx_in_unit[0] = cos(2. * M_PI * x_in);
     zx_in_unit[1] = sin(2. * M_PI * x_in);
@@ -290,10 +321,6 @@ CNumber Transformer2D::get_func_r(double x_in,
         list_zy_unit[iky] =
             list_zy_unit[iky_prev] / zy_in_unit;
     }
-
-    CNumber cnum_ret;
-    cnum_ret[0] = 0.;
-    cnum_ret[1] = 0.;
 
     for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
         for (int iky = 0; iky < num_mesh_y_; iky++) {
