@@ -188,7 +188,7 @@ void Transformer2D::export_func_r(std::string name_file,
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
         /*
-        fprintf(stdout, "Transformer2D:make\n");
+        fprintf(stdout, "Transformer2D:export_func_r\n");
         fprintf(stdout, "  OPENMP : n_thread = %d, tid = %d\n",
                 n_thread, tid);
         */

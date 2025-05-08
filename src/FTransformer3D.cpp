@@ -221,6 +221,11 @@ void Transformer3D::export_func_r(std::string name_file,
         #ifdef _OPENMP
         int n_thread = omp_get_num_threads();
         int tid = omp_get_thread_num();
+        /*
+        fprintf(stdout, "Transformer3D:export_func_r\n");
+        fprintf(stdout, "  OPENMP : n_thread = %d, tid = %d\n",
+                n_thread, tid);
+        */
         #endif
 
         double *xvec_now = new double[3];

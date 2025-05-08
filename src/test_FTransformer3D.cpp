@@ -123,6 +123,10 @@ CNumber signal_gaussians(double z, double x, double y) {
         exp(-0.5 * (1. - y) * (1. - y) /
                    (width_signal_y * width_signal_y));
 
+    double sin_z = sin(2. * M_PI * z);
+    double sin_x = sin(2. * M_PI * x);
+    double sin_y = sin(2. * M_PI * y);
+
     cnum_ret[0] = 1.;
     for (int j = 0; j < 8; j++) {
         int jz = j % 2;
@@ -133,6 +137,12 @@ CNumber signal_gaussians(double z, double x, double y) {
         cnum_ret[0] -=
             func_gauss_z[jz] * func_gauss_x[jx] * func_gauss_y[jy];
     }
+    cnum_ret[0] = cnum_ret[0] *
+        (sin_z * sin_z + sin_x * sin_x + sin_y * sin_y) / 3.;
+
+    delete [] func_gauss_z;
+    delete [] func_gauss_x;
+    delete [] func_gauss_y;
 
     return cnum_ret;
 }
@@ -146,10 +156,10 @@ CNumber signal_multi_tri(double z, double x, double y) {
         double iidx = static_cast<double>(i + 1);
         double iidy = 6. - iidx;
         cnum_ret[0] +=
-            cos(2. * M_PI * 4. *
+            cos(2. * M_PI * 2. *
                 (iidx * x + iidy * y));
         cnum_ret[1] +=
-            sin(2. * M_PI * 4. *
+            sin(2. * M_PI * 2. *
                 (iidx * x + iidy * y));
     }
 

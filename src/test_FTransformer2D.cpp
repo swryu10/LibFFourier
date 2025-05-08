@@ -94,20 +94,36 @@ CNumber signal_gaussians(double x, double y) {
     CNumber cnum_ret;
     cnum_ret[1] = 0.;
 
-    cnum_ret[0] =
-        exp(-0.5 * x * x / (width_signal_x * width_signal_x)
-            -0.5 * y * y / (width_signal_y * width_signal_y)) +
+    double *func_gauss_x = new double[2];
+    func_gauss_x[0] =
+        exp(-0.5 * x * x / (width_signal_x * width_signal_x));
+    func_gauss_x[1] =
         exp(-0.5 * (1. - x) * (1. - x) /
-                   (width_signal_x * width_signal_x)
-            -0.5 * y * y / (width_signal_y * width_signal_y)) +
-        exp(-0.5 * x * x /
-                   (width_signal_x * width_signal_x)
-            -0.5 * (1. - y) * (1. - y) /
-                   (width_signal_y * width_signal_y)) +
-        exp(-0.5 * (1. - x) * (1. - x) /
-                   (width_signal_x * width_signal_x)
-            -0.5 * (1. - y) * (1. - y) /
+                   (width_signal_x * width_signal_x));
+
+    double *func_gauss_y = new double[2];
+    func_gauss_y[0] =
+        exp(-0.5 * y * y / (width_signal_y * width_signal_y));
+    func_gauss_y[1] =
+        exp(-0.5 * (1. - y) * (1. - y) /
                    (width_signal_y * width_signal_y));
+
+    double sin_x = sin(2. * M_PI * x);
+    double sin_y = sin(2. * M_PI * y);
+
+    cnum_ret[0] = 1.;
+    for (int j = 0; j < 4; j++) {
+        int jx = j % 2;
+        int jy = (j - jx) / 2;
+
+        cnum_ret[0] -=
+            func_gauss_x[jx] * func_gauss_y[jy];
+    }
+    cnum_ret[0] = cnum_ret[0] *
+        (sin_x * sin_x + sin_y * sin_y) / 2.;
+
+    delete [] func_gauss_x;
+    delete [] func_gauss_y;
 
     return cnum_ret;
 }
@@ -121,10 +137,10 @@ CNumber signal_multi_tri(double x, double y) {
         double iidx = static_cast<double>(i + 1);
         double iidy = 6. - iidx;
         cnum_ret[0] +=
-            cos(2. * M_PI * 4. *
+            cos(2. * M_PI * 2. *
                 (iidx * x + iidy * y));
         cnum_ret[1] +=
-            sin(2. * M_PI * 4. *
+            sin(2. * M_PI * 2. *
                 (iidx * x + iidy * y));
     }
 
