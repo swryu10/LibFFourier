@@ -6,8 +6,10 @@ One can use OpenMP or MPI to accelerate calculations.
 
 # Build
 This library can be built with **cmake**. \
-In a **Linux/UNIX** system, one can build at a subdirectory with the following commands. \
-&ensp;$ mkdir [subdirectory name] \
-&ensp;$ cd [subdirectory name] \
-&ensp;$ cmake [directory for the LibFFourier local repository] \
-&ensp;$ cmake --build .
+In a **Linux/UNIX** system, one can build at a subdirectory with the following commands.
+```
+$ mkdir [subdirectory name]
+$ cd [subdirectory name]
+$ cmake [directory for the LibFFourier local repository]
+$ cmake --build .
+```
