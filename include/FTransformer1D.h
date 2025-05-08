@@ -10,10 +10,22 @@ namespace FFourier {
 class Transformer1D {
   private :
 
+    /* number of bins
+     * same for spatial (time) domain and
+     * wavevector (frequency) domain */
     int num_mesh_;
+    /* number of bins in each MPI processor
+     * used to parallelize with MPI */
     int *list_num_mesh_pr_;
 
+    /* function in the sptial (time) domain
+     * mesh_func_x_[ix] = f(x)
+     *   at x = ix / num_mesh_
+     *   where ix = 0 ... num_mesh_ - 1 */
     CNumber *mesh_func_x_;
+    /* wavenumber (frequency) component
+     * mesh_func_k_[ik] = the ik-th component
+     *   where ik = 0 ... num_mesh_ - 1 */
     CNumber *mesh_func_k_;
 
     double factor_inv_;

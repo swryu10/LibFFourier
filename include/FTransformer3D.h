@@ -10,15 +10,40 @@ namespace FFourier {
 class Transformer3D {
   private :
 
+    /* number of bins
+     *   num_mesh_z_ in z
+     *   num_mesh_x_ in x
+     *   num_mesh_y_ in y
+     * same for spatial (time) domain and
+     * wavevector (frequency) domain */
     int num_mesh_z_;
     int num_mesh_x_;
     int num_mesh_y_;
 
+    /* midpoints in z, x and y
+     * used to internal calculations
+     *   num_mmid_z_ = num_mesh_z_ / 2
+     *   num_mmid_x_ = num_mesh_x_ / 2
+     *   num_mmid_y_ = num_mesh_y_ / 2 */
     int num_mmid_z_;
     int num_mmid_x_;
     int num_mmid_y_;
 
+    /* function in the sptial (time) domain
+     * mesh_func_r_[irz][irx][iry] = f(z, x, y)
+     *   at z = irz / num_mesh_z_
+     *      x = irx / num_mesh_x_
+     *      y = iry / num_mesh_y_
+     *   where irz = 0 ... num_mesh_z_ - 1
+     *         irx = 0 ... num_mesh_x_ - 1
+     *         iry = 0 ... num_mesh_y_ - 1 */
     CNumber ***mesh_func_r_;
+    /* wavenumber (frequency) component
+     * mesh_func_k_[ikz][ikx][iky]
+     *     = the ikz/ikx/iky-th component
+     *   where ikz = 0 ... num_mesh_z_ - 1
+     *         ikx = 0 ... num_mesh_x_ - 1
+     *         iky = 0 ... num_mesh_y_ - 1 */
     CNumber ***mesh_func_k_;
 
     double factor_inv_;
