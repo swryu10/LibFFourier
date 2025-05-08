@@ -50,32 +50,59 @@ class Transformer3D {
 
     bool initialized_;
 
+    /* function to perform DFT
+     * which is called in init function */
+    void make();
+
   public :
 
+    // constructor
     Transformer3D() {
         initialized_ = false;
 
         return;
     }
 
+    // destructor
     ~Transformer3D() {
         reset();
 
         return;
     }
 
+    /* initialize and perform DFT
+     *
+     * num_in_mesh_z : number of mesh bins in z
+     * num_in_mesh_x : number of mesh bins in x
+     * num_in_mesh_y : number of mesh bins in y
+     *   num_mesh_z_ = num_in_mesh_z
+     *   num_mesh_x_ = num_in_mesh_x
+     *   num_mesh_y_ = num_in_mesh_y
+     * mesh_in_func_r : array for the tabulated function
+     * For irz = 0 ... num_mesh_z_ - 1 and
+     *     irx = 0 ... num_mesh_x_ - 1 and
+     *     iry = 0 ... num_mesh_y_ - 1,
+     *   mesh_func_r_[irz][irx][iry]
+     *       = mesh_in_func_r[irz][irx][iry] */
     void init(int num_in_mesh_z,
               int num_in_mesh_x,
               int num_in_mesh_y,
               CNumber ***mesh_in_func_r);
+    /* ptr_in_func_x : pointer to the function
+     *                 to be Fourier-transformed
+     * For irz = 0 ... num_mesh_z_ - 1 and
+     *     irx = 0 ... num_mesh_x_ - 1 and
+     *     iry = 0 ... num_mesh_y_ - 1,
+     *   mesh_func_r_[irz][irx][iry] = (*ptr_in_func_x)(z, x, y)
+     *                                 at z = irz / num_mesh_z_ and
+     *                                    x = irx / num_mesh_x_ and
+     *                                    y = iry / num_mesh_y_ */
     void init(int num_in_mesh_z,
               int num_in_mesh_x,
               int num_in_mesh_y,
               CNumber (*ptr_in_func_r)(double,
                                        double,
                                        double));
-
-    void make();
 
     void export_func_r(std::string name_file,
                        int num_in_pt_x,
