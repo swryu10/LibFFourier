@@ -1,5 +1,4 @@
 #include<stdio.h>
-#include<math.h>
 #include"FTransformer1D.h"
 
 namespace FFourier {
@@ -260,9 +259,12 @@ void Transformer1D::export_func_r(std::string name_file,
         double x_now = static_cast<double>(ix) /
                        static_cast<double>(num_in_pt_x);
         fprintf(ptr_fout, "    %e", x_now);
-        CNumber cnum_func_dft = get_func_r(x_now);
-        fprintf(ptr_fout, "    %e    %e",
-                cnum_func_dft[0], cnum_func_dft[1]);
+        CNumber cnum_df_dx_dft;
+        CNumber cnum_func_dft =
+            get_func_r(x_now, &cnum_df_dx_dft);
+        fprintf(ptr_fout, "    %e    %e    %e    %e",
+                cnum_func_dft[0], cnum_func_dft[1],
+                cnum_df_dx_dft[0], cnum_df_dx_dft[1]);
         if (ptr_in_func_x != NULL) {
             CNumber cnum_func_ini = (*ptr_in_func_x)(x_now);
             fprintf(ptr_fout, "    %e    %e",
@@ -358,7 +360,8 @@ CNumber Transformer1D::next(int ik, int num_in_mesh,
     return cnum_ret;
 }
 
-CNumber Transformer1D::get_func_r(double x_in) {
+CNumber Transformer1D::get_func_r(double x_in,
+                                  CNumber *ptr_df_dx) {
     CNumber cnum_ret;
     cnum_ret[0] = 0.;
     cnum_ret[1] = 0.;
@@ -378,6 +381,32 @@ CNumber Transformer1D::get_func_r(double x_in) {
         }
         cnum_ret = cnum_ret +
             (mesh_func_k_[ik] * (z_in_unit ^ jk));
+    }
+
+    if (ptr_df_dx != NULL) {
+        CNumber cnum_df_dx;
+        cnum_df_dx[0] = 0.;
+        cnum_df_dx[1] = 0.;
+
+        for (int ik = 0; ik < num_mesh_; ik++) {
+            int jk = ik;
+            if (2 * ik >= num_mesh_) {
+                jk = ik - num_mesh_;
+            }
+
+            if (jk == 0) {
+                continue;
+            }
+
+            CNumber fac_deriv;
+            fac_deriv[0] = 0.;
+            fac_deriv[1] = 2. * M_PI * jk;
+
+            cnum_df_dx = cnum_df_dx + fac_deriv *
+                (mesh_func_k_[ik] * (z_in_unit ^ jk));
+        }
+
+        *ptr_df_dx = factor_inv_ * cnum_df_dx;
     }
 
     return factor_inv_ * cnum_ret;

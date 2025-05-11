@@ -1,6 +1,7 @@
 #ifndef _FTRANSFORMER1D_H_
 #define _FTRANSFORMER1D_H_
 
+#include<math.h>
 #include<string>
 #include"Parallel.h"
 #include"CNumber.h"
@@ -78,8 +79,10 @@ class Transformer1D {
     CNumber next(int ik, int num_in_mesh,
                  CNumber *mesh_in_func_x);
 
-    CNumber get_func_r(double x_in);
-    CNumber get_func_r(int ix) {
+    CNumber get_func_r(double x_in,
+                       CNumber *ptr_df_dx = NULL);
+    CNumber get_func_r(int ix,
+                       CNumber *ptr_df_dx = NULL) {
         if (ParallelMPI::rank_ != 0) {
             CNumber cnum_ret;
             cnum_ret[0] = 0.;
@@ -89,6 +92,41 @@ class Transformer1D {
         }
 
         int jx = (ix + num_mesh_) % num_mesh_;
+
+        if (ptr_df_dx != NULL) {
+            CNumber z_in_unit;
+            z_in_unit[0] =
+                cos(2. * M_PI * static_cast<double>(ix) /
+                                static_cast<double>(num_mesh_));
+            z_in_unit[1] =
+                sin(2. * M_PI * static_cast<double>(ix) /
+                                static_cast<double>(num_mesh_));
+
+            CNumber cnum_df_dx;
+            cnum_df_dx[0] = 0.;
+            cnum_df_dx[1] = 0.;
+
+            for (int ik = 0; ik < num_mesh_; ik++) {
+                int jk = ik;
+                if (2 * ik >= num_mesh_) {
+                    jk = ik - num_mesh_;
+                }
+
+                if (jk == 0) {
+                    continue;
+                }
+
+                CNumber fac_deriv;
+                fac_deriv[0] = 0.;
+                fac_deriv[1] = 2. * M_PI * jk;
+
+                cnum_df_dx = cnum_df_dx + fac_deriv *
+                    (mesh_func_k_[ik] * (z_in_unit ^ jk));
+            }
+
+            *ptr_df_dx = factor_inv_ * cnum_df_dx;
+        }
+
         return mesh_func_x_[jx];
     }
 
