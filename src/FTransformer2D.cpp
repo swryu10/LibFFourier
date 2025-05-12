@@ -416,4 +416,76 @@ CNumber Transformer2D::get_func_r(double x_in,
     return factor_inv_ * cnum_ret;
 }
 
+CNumber Transformer2D::get_func_r(int irx, int iry,
+                                  CNumber *ptr_df_dx,
+                                  CNumber *ptr_df_dy) {
+    if (ParallelMPI::rank_ != 0) {
+        CNumber cnum_ret;
+        cnum_ret[0] = 0.;
+        cnum_ret[1] = 0.;
+
+        return cnum_ret;
+    }
+
+    int jrx = (irx + num_mesh_x_) % num_mesh_x_;
+    int jry = (iry + num_mesh_y_) % num_mesh_y_;
+
+    if (ptr_df_dx != NULL ||
+        ptr_df_dy != NULL) {
+        CNumber cnum_df_dx;
+        cnum_df_dx[0] = 0.;
+        cnum_df_dx[1] = 0.;
+
+        CNumber cnum_df_dy;
+        cnum_df_dy[0] = 0.;
+        cnum_df_dy[1] = 0.;
+
+        for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
+            int jkx = ikx;
+            if (ikx >= num_mmid_x_) {
+                jkx = ikx - num_mesh_x_;
+            }
+
+            CNumber fac_deriv_x;
+            fac_deriv_x[0] = 0.;
+            fac_deriv_x[1] =
+                2. * M_PI * static_cast<double>(jkx);
+
+            for (int iky = 0; iky < num_mesh_y_; iky++) {
+                int jky = iky;
+                if (iky >= num_mmid_y_) {
+                    jky = iky - num_mesh_y_;
+                }
+
+                CNumber fac_deriv_y;
+                fac_deriv_y[0] = 0.;
+                fac_deriv_y[1] =
+                    2. * M_PI * static_cast<double>(jky);
+
+                cnum_df_dx = cnum_df_dx +
+                    fac_deriv_x *
+                    (mesh_func_k_[ikx][iky] *
+                     (z_unit_x_ ^ (jkx * jrx)) *
+                     (z_unit_y_ ^ (jky * jry)));
+
+                cnum_df_dy = cnum_df_dy +
+                    fac_deriv_y *
+                    (mesh_func_k_[ikx][iky] *
+                     (z_unit_x_ ^ (jkx * jrx)) *
+                     (z_unit_y_ ^ (jky * jry)));
+            }
+        }
+
+        if (ptr_df_dx != NULL) {
+            *ptr_df_dx = factor_inv_ * cnum_df_dx;
+        }
+
+        if (ptr_df_dy != NULL) {
+            *ptr_df_dy = factor_inv_ * cnum_df_dy;
+        }
+    }
+
+    return mesh_func_r_[jrx][jry];
+}
+
 } // end namespace FFourier

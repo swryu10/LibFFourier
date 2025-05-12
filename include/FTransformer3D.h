@@ -48,6 +48,10 @@ class Transformer3D {
 
     double factor_inv_;
 
+    CNumber z_unit_z_;
+    CNumber z_unit_x_;
+    CNumber z_unit_y_;
+
     bool initialized_;
 
     /* function to perform DFT
@@ -117,21 +121,14 @@ class Transformer3D {
 
     CNumber get_func_r(double z_in,
                        double x_in,
-                       double y_in);
-    CNumber get_func_r(int irz, int irx, int iry) {
-        if (ParallelMPI::rank_ != 0) {
-            CNumber cnum_ret;
-            cnum_ret[0] = 0.;
-            cnum_ret[1] = 0.;
-
-            return cnum_ret;
-        }
-
-        int jrz = (irz + num_mesh_z_) % num_mesh_z_;
-        int jrx = (irx + num_mesh_x_) % num_mesh_x_;
-        int jry = (iry + num_mesh_y_) % num_mesh_y_;
-        return mesh_func_r_[jrz][jrx][jry];
-    }
+                       double y_in,
+                       CNumber *ptr_df_dz = NULL,
+                       CNumber *ptr_df_dx = NULL,
+                       CNumber *ptr_df_dy = NULL);
+    CNumber get_func_r(int irz, int irx, int iry,
+                       CNumber *ptr_df_dz = NULL,
+                       CNumber *ptr_df_dx = NULL,
+                       CNumber *ptr_df_dy = NULL);
 
     CNumber get_func_k(int ikz, int ikx, int iky) {
         if (ParallelMPI::rank_ != 0) {
