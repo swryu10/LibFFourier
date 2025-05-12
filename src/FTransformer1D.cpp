@@ -401,7 +401,8 @@ CNumber Transformer1D::get_func_r(double x_in,
 
             CNumber fac_deriv;
             fac_deriv[0] = 0.;
-            fac_deriv[1] = 2. * M_PI * jk;
+            fac_deriv[1] =
+                2. * M_PI * static_cast<double>(jk);
 
             cnum_df_dx = cnum_df_dx + fac_deriv *
                 (mesh_func_k_[ik] * (z_in_unit ^ jk));

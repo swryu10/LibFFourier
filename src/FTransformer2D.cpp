@@ -20,6 +20,16 @@ void Transformer2D::init(int num_in_mesh_x,
     factor_inv_ =
         1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
 
+    z_unit_x_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+    z_unit_x_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+
+    z_unit_y_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
+    z_unit_y_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
+
     num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
     num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
 
@@ -58,6 +68,16 @@ void Transformer2D::init(int num_in_mesh_x,
     num_mesh_y_ = num_in_mesh_y;
     factor_inv_ =
         1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
+
+    z_unit_x_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+    z_unit_x_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+
+    z_unit_y_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
+    z_unit_y_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
 
     num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
     num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
@@ -284,7 +304,9 @@ void Transformer2D::reset() {
 }
 
 CNumber Transformer2D::get_func_r(double x_in,
-                                  double y_in) {
+                                  double y_in,
+                                  CNumber *ptr_df_dx,
+                                  CNumber *ptr_df_dy) {
     CNumber cnum_ret;
     cnum_ret[0] = 0.;
     cnum_ret[1] = 0.;
@@ -332,6 +354,59 @@ CNumber Transformer2D::get_func_r(double x_in,
             cnum_ret = cnum_ret +
                 (mesh_func_k_[ikx][iky] *
                  list_zx_unit[ikx] * list_zy_unit[iky]);
+        }
+    }
+
+    if (ptr_df_dx != NULL ||
+        ptr_df_dy != NULL) {
+        CNumber cnum_df_dx;
+        cnum_df_dx[0] = 0.;
+        cnum_df_dx[1] = 0.;
+
+        CNumber cnum_df_dy;
+        cnum_df_dy[0] = 0.;
+        cnum_df_dy[1] = 0.;
+
+        for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
+            int jkx = ikx;
+            if (ikx >= num_mmid_x_) {
+                jkx = ikx - num_mesh_x_;
+            }
+
+            CNumber fac_deriv_x;
+            fac_deriv_x[0] = 0.;
+            fac_deriv_x[1] =
+                2. * M_PI * static_cast<double>(jkx);
+
+            for (int iky = 0; iky < num_mesh_y_; iky++) {
+                int jky = iky;
+                if (iky >= num_mmid_y_) {
+                    jky = iky - num_mesh_y_;
+                }
+
+                CNumber fac_deriv_y;
+                fac_deriv_y[0] = 0.;
+                fac_deriv_y[1] =
+                    2. * M_PI * static_cast<double>(jky);
+
+                cnum_df_dx = cnum_df_dx +
+                    fac_deriv_x *
+                    (mesh_func_k_[ikx][iky] *
+                     list_zx_unit[ikx] * list_zy_unit[iky]);
+
+                cnum_df_dy = cnum_df_dy +
+                    fac_deriv_y *
+                    (mesh_func_k_[ikx][iky] *
+                     list_zx_unit[ikx] * list_zy_unit[iky]);
+            }
+        }
+
+        if (ptr_df_dx != NULL) {
+            *ptr_df_dx = factor_inv_ * cnum_df_dx;
+        }
+
+        if (ptr_df_dy != NULL) {
+            *ptr_df_dy = factor_inv_ * cnum_df_dy;
         }
     }
 
