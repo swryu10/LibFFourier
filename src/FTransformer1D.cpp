@@ -15,6 +15,11 @@ void Transformer1D::init(int num_in_mesh,
     factor_inv_ =
         1. / static_cast<double>(num_mesh_);
 
+    z_unit_[0] = cos(2. * M_PI /
+                     static_cast<double>(num_mesh_));
+    z_unit_[1] = sin(2. * M_PI /
+                     static_cast<double>(num_mesh_));
+
     list_num_mesh_pr_ = new int[ParallelMPI::size_];
     for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
         list_num_mesh_pr_[ipr] = 0;
@@ -51,6 +56,11 @@ void Transformer1D::init(int num_in_mesh,
     num_mesh_ = num_in_mesh;
     factor_inv_ =
         1. / static_cast<double>(num_mesh_);
+
+    z_unit_[0] = cos(2. * M_PI /
+                     static_cast<double>(num_mesh_));
+    z_unit_[1] = sin(2. * M_PI /
+                     static_cast<double>(num_mesh_));
 
     list_num_mesh_pr_ = new int[ParallelMPI::size_];
     for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
@@ -254,6 +264,8 @@ void Transformer1D::export_func_r(std::string name_file,
     }
 
     fprintf(ptr_fout, "# num_point = %d\n", num_in_pt_x);
+    fprintf(ptr_fout, "# x    f.re    f.im    df_dx.re    df_dx.im");
+    fprintf(ptr_fout, "    f_ini.re    f_ini.im\n");
 
     for (int ix = 0; ix < num_in_pt_x; ix++) {
         double x_now = static_cast<double>(ix) /
@@ -315,31 +327,19 @@ CNumber Transformer1D::next(int ik, int num_in_mesh,
     cnum_ret[0] = 0.;
     cnum_ret[1] = 0.;
 
+    int mul_n_mesh = num_mesh_ / num_in_mesh;
+
     if (num1 == 1) {
         if (num_in_mesh == 1) {
             cnum_ret = mesh_in_func_x[0];
         } else {
-            CNumber z_in_unit;
-            z_in_unit[0] = cos(2. * M_PI *
-                               static_cast<double>(ik) /
-                               static_cast<double>(num_in_mesh));
-            z_in_unit[1] = sin(2. * M_PI *
-                               static_cast<double>(ik) /
-                               static_cast<double>(num_in_mesh));
             for (int ix = 0; ix < num_in_mesh; ix++) {
                 cnum_ret = cnum_ret +
-                    (mesh_in_func_x[ix] / (z_in_unit ^ ix));
+                    (mesh_in_func_x[ix] /
+                     (z_unit_ ^ (ik * ix * mul_n_mesh)));
             }
         }
     } else {
-        CNumber z_in_unit;
-        z_in_unit[0] = cos(2. * M_PI *
-                           static_cast<double>(ik) /
-                           static_cast<double>(num_in_mesh));
-        z_in_unit[1] = sin(2. * M_PI *
-                           static_cast<double>(ik) /
-                           static_cast<double>(num_in_mesh));
-
         CNumber *mesh1_func_x = new CNumber[num1];
         for (int ix = 0; ix < num1; ix++) {
             mesh1_func_x[ix][0] = 0.;
@@ -347,7 +347,8 @@ CNumber Transformer1D::next(int ik, int num_in_mesh,
 
             for (int jx = 0; jx < num2; jx++) {
                 mesh1_func_x[ix] = mesh1_func_x[ix] +
-                    (mesh_in_func_x[num2 * ix + jx] / (z_in_unit ^ jx));
+                    (mesh_in_func_x[num2 * ix + jx] /
+                     (z_unit_ ^ (ik * jx * mul_n_mesh)));
             }
         }
 

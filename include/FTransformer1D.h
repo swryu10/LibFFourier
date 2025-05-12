@@ -31,6 +31,8 @@ class Transformer1D {
 
     double factor_inv_;
 
+    CNumber z_unit_;
+
     bool initialized_;
 
     /* function to perform DFT
@@ -94,14 +96,6 @@ class Transformer1D {
         int jx = (ix + num_mesh_) % num_mesh_;
 
         if (ptr_df_dx != NULL) {
-            CNumber z_in_unit;
-            z_in_unit[0] =
-                cos(2. * M_PI * static_cast<double>(ix) /
-                                static_cast<double>(num_mesh_));
-            z_in_unit[1] =
-                sin(2. * M_PI * static_cast<double>(ix) /
-                                static_cast<double>(num_mesh_));
-
             CNumber cnum_df_dx;
             cnum_df_dx[0] = 0.;
             cnum_df_dx[1] = 0.;
@@ -121,7 +115,7 @@ class Transformer1D {
                 fac_deriv[1] = 2. * M_PI * jk;
 
                 cnum_df_dx = cnum_df_dx + fac_deriv *
-                    (mesh_func_k_[ik] * (z_in_unit ^ jk));
+                    (mesh_func_k_[ik] * (z_unit_ ^ (jk * ix)));
             }
 
             *ptr_df_dx = factor_inv_ * cnum_df_dx;
