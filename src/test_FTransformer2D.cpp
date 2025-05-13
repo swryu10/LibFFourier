@@ -52,12 +52,12 @@ int main(int argc, char *argv[]) {
     }
     ptr_func_r = &signal_multi_tri;
     dft.init(n_mesh_x, n_mesh_y, ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
-        for (int ikx = 0; ikx < n_mesh_x; ikx++) {
-            for (int iky = 0; iky < n_mesh_y; iky++) {
-                CNumber func_k =
-                    dft.get_func_k(ikx, iky);
+    for (int ikx = 0; ikx < n_mesh_x; ikx++) {
+        for (int iky = 0; iky < n_mesh_y; iky++) {
+            CNumber func_k =
+                dft.get_func_k(ikx, iky);
 
+            if (ParallelMPI::rank_ == 0) {
                 if (func_k.get_abs() > 1.0e-2) {
                     fprintf(stdout,
                             "    ikx = %d, iky = %d\n",

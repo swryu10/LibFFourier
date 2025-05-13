@@ -25,6 +25,10 @@ class Transformer2D {
     int num_mmid_x_;
     int num_mmid_y_;
 
+    /* number of bins in each MPI processor
+     * used to parallelize with MPI */
+    int *list_num_mesh_x_pr_;
+
     /* function in the sptial (time) domain
      * mesh_func_r_[irx][iry] = f(x, y)
      *   at x = irx / num_mesh_x_
@@ -32,12 +36,12 @@ class Transformer2D {
      *   where irx = 0 ... num_mesh_x_ - 1
      *         iry = 0 ... num_mesh_y_ - 1 */
     CNumber **mesh_func_r_;
-    /* wavenumber (frequency) component
-     * mesh_func_k_[ikx][iky]
-     *     = the ikx/iky-th component
-     *   where ikx = 0 ... num_mesh_x_ - 1
+    /* wavenumber (frequency) component in each MPI processor
+     * mesh_func_k_[ikxpr][iky]
+     *     = the ikxpr/iky-th component
+     *   where ikxpr = 0 ... list_num_mesh_x_pr_[rank] - 1
      *         iky = 0 ... num_mesh_y_ - 1 */
-    CNumber **mesh_func_k_;
+    CNumber **mesh_func_k_pr_;
 
     double factor_inv_;
 
@@ -106,19 +110,7 @@ class Transformer2D {
                        CNumber *ptr_df_dx = NULL,
                        CNumber *ptr_df_dy = NULL);
 
-    CNumber get_func_k(int ikx, int iky) {
-        if (ParallelMPI::rank_ != 0) {
-            CNumber cnum_ret;
-            cnum_ret[0] = 0.;
-            cnum_ret[1] = 0.;
-
-            return cnum_ret;
-        }
-
-        int jkx = (ikx + num_mesh_x_) % num_mesh_x_;
-        int jky = (iky + num_mesh_y_) % num_mesh_y_;
-        return mesh_func_k_[jkx][jky];
-    }
+    CNumber get_func_k(int ikx, int iky);
 };
 
 } // end namespace FFourier
