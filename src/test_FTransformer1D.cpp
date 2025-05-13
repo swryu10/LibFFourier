@@ -39,9 +39,11 @@ int main(int argc, char *argv[]) {
 
     if (ParallelMPI::rank_ == 0) {
         fprintf(stdout, "# n_mesh = %d\n", n_mesh);
-        for (int ik = 0; ik < n_mesh; ik++) {
-            CNumber func_k =
-                dft.get_func_k(ik);
+    }
+    for (int ik = 0; ik < n_mesh; ik++) {
+        CNumber func_k =
+            dft.get_func_k(ik);
+        if (ParallelMPI::rank_ == 0) {
             fprintf(stdout, "    %d    %e    %e\n",
                     ik, func_k[0], func_k[1]);
         }

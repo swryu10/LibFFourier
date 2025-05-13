@@ -24,10 +24,10 @@ class Transformer1D {
      *   at x = ix / num_mesh_
      *   where ix = 0 ... num_mesh_ - 1 */
     CNumber *mesh_func_x_;
-    /* wavenumber (frequency) component
-     * mesh_func_k_[ik] = the ik-th component
-     *   where ik = 0 ... num_mesh_ - 1 */
-    CNumber *mesh_func_k_;
+    /* wavenumber (frequency) component in each MPI processor
+     * mesh_func_k_pr_[ikpr] = the ikpr-th component
+     *   where ikpr = 0 ... list_num_mesh_pr_[rank] - 1 */
+    CNumber *mesh_func_k_pr_;
 
     double factor_inv_;
 
@@ -84,59 +84,9 @@ class Transformer1D {
     CNumber get_func_r(double x_in,
                        CNumber *ptr_df_dx = NULL);
     CNumber get_func_r(int ix,
-                       CNumber *ptr_df_dx = NULL) {
-        if (ParallelMPI::rank_ != 0) {
-            CNumber cnum_ret;
-            cnum_ret[0] = 0.;
-            cnum_ret[1] = 0.;
+                       CNumber *ptr_df_dx = NULL);
 
-            return cnum_ret;
-        }
-
-        int jx = (ix + num_mesh_) % num_mesh_;
-
-        if (ptr_df_dx != NULL) {
-            CNumber cnum_df_dx;
-            cnum_df_dx[0] = 0.;
-            cnum_df_dx[1] = 0.;
-
-            for (int ik = 0; ik < num_mesh_; ik++) {
-                int jk = ik;
-                if (2 * ik >= num_mesh_) {
-                    jk = ik - num_mesh_;
-                }
-
-                if (jk == 0) {
-                    continue;
-                }
-
-                CNumber fac_deriv;
-                fac_deriv[0] = 0.;
-                fac_deriv[1] =
-                    2. * M_PI * static_cast<double>(jk);
-
-                cnum_df_dx = cnum_df_dx + fac_deriv *
-                    (mesh_func_k_[ik] * (z_unit_ ^ (jk * jx)));
-            }
-
-            *ptr_df_dx = factor_inv_ * cnum_df_dx;
-        }
-
-        return mesh_func_x_[jx];
-    }
-
-    CNumber get_func_k(int ik) {
-        if (ParallelMPI::rank_ != 0) {
-            CNumber cnum_ret;
-            cnum_ret[0] = 0.;
-            cnum_ret[1] = 0.;
-
-            return cnum_ret;
-        }
-
-        int jk = (ik + num_mesh_) % num_mesh_;
-        return mesh_func_k_[jk];
-    }
+    CNumber get_func_k(int ik);
 };
 
 } // end namespace FFourier
