@@ -591,8 +591,8 @@ CNumber Transformer2D::get_func_r(double x_in,
         #endif
     }
 
-    if (flag_df_dr[0] != 1 ||
-        flag_df_dr[1] != 1) {
+    if (flag_df_dr[0] != 0 ||
+        flag_df_dr[1] != 0) {
         CNumber cnum_df_dx;
         cnum_df_dx[0] = 0.;
         cnum_df_dx[1] = 0.;
@@ -732,11 +732,11 @@ CNumber Transformer2D::get_func_r(double x_in,
         #endif
 
         if (ParallelMPI::rank_ == 0) {
-            if (flag_df_dr[0] != 1) {
+            if (flag_df_dr[0] != 0) {
                 *ptr_df_dx = factor_inv_ * cnum_df_dx;
             }
 
-            if (flag_df_dr[1] != 1) {
+            if (flag_df_dr[1] != 0) {
                 *ptr_df_dy = factor_inv_ * cnum_df_dy;
             }
         }
@@ -760,9 +760,6 @@ CNumber Transformer2D::get_func_r(int irx, int iry,
     int tag;
     MPI_Status status;
     #endif
-
-    int num_mesh_x_pr =
-        list_num_mesh_x_pr_[ParallelMPI::rank_];
 
     int *flag_df_dr = new int[2];
     flag_df_dr[0] = 0;
@@ -791,8 +788,8 @@ CNumber Transformer2D::get_func_r(int irx, int iry,
         #endif
     }
 
-    if (flag_df_dr[0] != 1 ||
-        flag_df_dr[1] != 1) {
+    if (flag_df_dr[0] != 0 ||
+        flag_df_dr[1] != 0) {
         CNumber cnum_df_dx;
         cnum_df_dx[0] = 0.;
         cnum_df_dx[1] = 0.;
@@ -800,6 +797,9 @@ CNumber Transformer2D::get_func_r(int irx, int iry,
         CNumber cnum_df_dy;
         cnum_df_dy[0] = 0.;
         cnum_df_dy[1] = 0.;
+
+        int num_mesh_x_pr =
+            list_num_mesh_x_pr_[ParallelMPI::rank_];
 
         #ifdef _OPENMP
         CNumber *list_c_df_dx =
@@ -933,11 +933,11 @@ CNumber Transformer2D::get_func_r(int irx, int iry,
         #endif
 
         if (ParallelMPI::rank_ == 0) {
-            if (flag_df_dr[0] != 1) {
+            if (flag_df_dr[0] != 0) {
                 *ptr_df_dx = factor_inv_ * cnum_df_dx;
             }
 
-            if (flag_df_dr[1] != 1) {
+            if (flag_df_dr[1] != 0) {
                 *ptr_df_dy = factor_inv_ * cnum_df_dy;
             }
         }
