@@ -219,6 +219,7 @@ void Transformer2D::make() {
 
                     mesh_func_k_pr_[ikxpr][iky] = list_func_k[ikx];
                 } else {
+                    #ifdef _MPI
                     double *set_func_k = new double[2];
                     set_func_k[0] = list_func_k[ikx][0];
                     set_func_k[1] = list_func_k[ikx][1];
@@ -230,11 +231,13 @@ void Transformer2D::make() {
                              ipr_tar, tag, MPI_COMM_WORLD);
 
                     delete [] set_func_k;
+                    #endif
                 }
             }
 
             delete [] list_func_k;
         } else {
+            #ifdef _MPI
             for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
                 int ipr_tar = ikx % ParallelMPI::size_;
                 if (ParallelMPI::rank_ != ipr_tar) {
@@ -257,6 +260,7 @@ void Transformer2D::make() {
 
                 delete [] set_func_k;
             }
+            #endif
         }
     }
 
