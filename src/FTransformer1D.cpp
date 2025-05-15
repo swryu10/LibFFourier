@@ -267,7 +267,7 @@ void Transformer1D::reset() {
     }
 
     if (list_num_mesh_pr_[ParallelMPI::rank_] > 0) {
-        delete [] mesh_func_k_pr_;;
+        delete [] mesh_func_k_pr_;
     }
 
     delete [] list_num_mesh_pr_;
