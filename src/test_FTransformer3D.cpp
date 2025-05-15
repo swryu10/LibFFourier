@@ -31,12 +31,18 @@ int main(int argc, char *argv[]) {
     ptr_func_r = &signal_rectangle;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
     std::string name_rectangle =
         "tab3D_signal_rectangle.txt";
     dft.export_func_r(name_rectangle,
                       n_pt_x, n_pt_y,
                       0, 0.15,
                       ptr_func_r);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    export_func_r\n");
+    }
 
     if (ParallelMPI::rank_ == 0) {
         fprintf(stdout, "  signal_gaussians\n");
@@ -44,12 +50,18 @@ int main(int argc, char *argv[]) {
     ptr_func_r = &signal_gaussians;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
     std::string name_gaussians =
         "tab3D_signal_gaussians.txt";
     dft.export_func_r(name_gaussians,
                       n_pt_x, n_pt_y,
                       0, 0.15,
                       ptr_func_r);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    export_func_r\n");
+    }
 
     if (ParallelMPI::rank_ == 0) {
         fprintf(stdout, "  signal_multi_tri\n");
@@ -57,6 +69,9 @@ int main(int argc, char *argv[]) {
     ptr_func_r = &signal_multi_tri;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
     for (int ikz = 0; ikz < n_mesh_z; ikz++) {
         for (int ikx = 0; ikx < n_mesh_x; ikx++) {
             for (int iky = 0; iky < n_mesh_y; iky++) {

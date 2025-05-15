@@ -20,22 +20,46 @@ int main(int argc, char *argv[]) {
     CNumber (*ptr_func_x)(double);
     FFourier::Transformer1D dft;
 
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_rectangle\n");
+    }
     std::string name_rectangle =
         "tab1D_signal_rectangle.txt";
     ptr_func_x = &signal_rectangle;
     dft.init(n_mesh, ptr_func_x);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
     dft.export_func_r(name_rectangle, n_pt,
                       ptr_func_x);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    export_func_r\n");
+    }
 
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_gaussians\n");
+    }
     std::string name_gaussians =
         "tab1D_signal_gaussians.txt";
     ptr_func_x = &signal_gaussians;
     dft.init(n_mesh, ptr_func_x);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
     dft.export_func_r(name_gaussians, n_pt,
                       ptr_func_x);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    export_func_r\n");
+    }
 
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "  signal_multi_tri\n");
+    }
     ptr_func_x = &signal_multi_tri;
     dft.init(n_mesh, ptr_func_x);
+    if (ParallelMPI::rank_ == 0) {
+        fprintf(stdout, "    init\n");
+    }
 
     if (ParallelMPI::rank_ == 0) {
         fprintf(stdout, "# n_mesh = %d\n", n_mesh);
