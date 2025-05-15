@@ -48,6 +48,7 @@ class Transformer2D {
     CNumber z_unit_x_;
     CNumber z_unit_y_;
 
+    bool have_mesh_func_;
     bool initialized_;
 
     /* function to perform DFT
@@ -58,6 +59,7 @@ class Transformer2D {
 
     // constructor
     Transformer2D() {
+        have_mesh_func_ = false;
         initialized_ = false;
 
         return;
@@ -94,6 +96,9 @@ class Transformer2D {
               int num_in_mesh_y,
               CNumber (*ptr_in_func_r)(double,
                                        double));
+
+    void alloc_mesh_func(int num_in_mesh_x,
+                         int num_in_mesh_y);
 
     void export_func_r(std::string name_file,
                        int num_in_pt_x, int num_in_pt_y,

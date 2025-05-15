@@ -33,6 +33,7 @@ class Transformer1D {
 
     CNumber z_unit_;
 
+    bool have_mesh_func_;
     bool initialized_;
 
     /* function to perform DFT
@@ -43,6 +44,7 @@ class Transformer1D {
 
     // constructor
     Transformer1D() {
+        have_mesh_func_ = false;
         initialized_ = false;
 
         return;
@@ -71,6 +73,8 @@ class Transformer1D {
      *                      at x = ix / num_mesh_ */
     void init(int num_in_mesh,
               CNumber (*ptr_in_func_x)(double));
+
+    void alloc_mesh_func(int num_in_mesh);
 
     void export_func_r(std::string name_file,
                        int num_in_pt,

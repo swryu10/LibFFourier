@@ -8,46 +8,14 @@ namespace FFourier {
 void Transformer2D::init(int num_in_mesh_x,
                          int num_in_mesh_y,
                          CNumber **mesh_in_func_r) {
-    reset();
-
-    if (num_in_mesh_x < 2 ||
-        num_in_mesh_y < 2) {
+    alloc_mesh_func(num_in_mesh_x,
+                    num_in_mesh_y);
+    if (!have_mesh_func_) {
         return;
     }
 
-    num_mesh_x_ = num_in_mesh_x;
-    num_mesh_y_ = num_in_mesh_y;
-    factor_inv_ =
-        1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
-
-    z_unit_x_[0] = cos(2. * M_PI /
-                       static_cast<double>(num_mesh_x_));
-    z_unit_x_[1] = sin(2. * M_PI /
-                       static_cast<double>(num_mesh_x_));
-
-    z_unit_y_[0] = cos(2. * M_PI /
-                       static_cast<double>(num_mesh_y_));
-    z_unit_y_[1] = sin(2. * M_PI /
-                       static_cast<double>(num_mesh_y_));
-
-    num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
-    num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
-
-    list_num_mesh_x_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
-        list_num_mesh_x_pr_[ipr] = 0;
-    }
-
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        int ipr = irx % ParallelMPI::size_;
-        list_num_mesh_x_pr_[ipr] += 1;
-    }
-
     if (ParallelMPI::rank_ == 0) {
-        mesh_func_r_ = new CNumber *[num_mesh_x_];
         for (int irx = 0; irx < num_mesh_x_; irx++) {
-            mesh_func_r_[irx] = new CNumber[num_mesh_y_];
-
             for (int iry = 0; iry < num_mesh_y_; iry++) {
                 mesh_func_r_[irx][iry] =
                     mesh_in_func_r[irx][iry];
@@ -55,17 +23,9 @@ void Transformer2D::init(int num_in_mesh_x,
         }
     }
 
-    int num_mesh_x_pr =
-        list_num_mesh_x_pr_[ParallelMPI::rank_];
-    if (num_mesh_x_pr > 0) {
-        mesh_func_k_pr_ = new CNumber *[num_mesh_x_pr];
-        for (int ikxpr = 0; ikxpr < num_mesh_x_pr; ikxpr++) {
-            mesh_func_k_pr_[ikxpr] = new CNumber[num_mesh_y_];
-        }
-    }
+    make();
 
     initialized_ = true;
-    make();
 
     return;
 }
@@ -74,49 +34,17 @@ void Transformer2D::init(int num_in_mesh_x,
                          int num_in_mesh_y,
                          CNumber (*ptr_in_func_r)(double,
                                                   double)) {
-    reset();
-
-    if (num_in_mesh_x < 2 ||
-        num_in_mesh_y < 2) {
+    alloc_mesh_func(num_in_mesh_x,
+                    num_in_mesh_y);
+    if (!have_mesh_func_) {
         return;
     }
-
-    num_mesh_x_ = num_in_mesh_x;
-    num_mesh_y_ = num_in_mesh_y;
-    factor_inv_ =
-        1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
-
-    z_unit_x_[0] = cos(2. * M_PI /
-                       static_cast<double>(num_mesh_x_));
-    z_unit_x_[1] = sin(2. * M_PI /
-                       static_cast<double>(num_mesh_x_));
-
-    z_unit_y_[0] = cos(2. * M_PI /
-                       static_cast<double>(num_mesh_y_));
-    z_unit_y_[1] = sin(2. * M_PI /
-                       static_cast<double>(num_mesh_y_));
-
-    num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
-    num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
 
     double nd_mesh_x = static_cast<double>(num_mesh_x_);
     double nd_mesh_y = static_cast<double>(num_mesh_y_);
 
-    list_num_mesh_x_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
-        list_num_mesh_x_pr_[ipr] = 0;
-    }
-
-    for (int irx = 0; irx < num_mesh_x_; irx++) {
-        int ipr = irx % ParallelMPI::size_;
-        list_num_mesh_x_pr_[ipr] += 1;
-    }
-
     if (ParallelMPI::rank_ == 0) {
-        mesh_func_r_ = new CNumber *[num_mesh_x_];
         for (int irx = 0; irx < num_mesh_x_; irx++) {
-            mesh_func_r_[irx] = new CNumber[num_mesh_y_];
-
             double x_now =
                 static_cast<double>(irx) / nd_mesh_x;
 
@@ -130,6 +58,57 @@ void Transformer2D::init(int num_in_mesh_x,
         }
     }
 
+    make();
+
+    initialized_ = true;
+
+    return;
+}
+
+void Transformer2D::alloc_mesh_func(int num_in_mesh_x,
+                                    int num_in_mesh_y) {
+    reset();
+
+    if (num_in_mesh_x < 2 ||
+        num_in_mesh_y < 2) {
+        return;
+    }
+
+    num_mesh_x_ = num_in_mesh_x;
+    num_mesh_y_ = num_in_mesh_y;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_x_ * num_mesh_y_);
+
+    z_unit_x_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+    z_unit_x_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_x_));
+
+    z_unit_y_[0] = cos(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
+    z_unit_y_[1] = sin(2. * M_PI /
+                       static_cast<double>(num_mesh_y_));
+
+    num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
+    num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
+
+    list_num_mesh_x_pr_ = new int[ParallelMPI::size_];
+    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
+        list_num_mesh_x_pr_[ipr] = 0;
+    }
+
+    for (int irx = 0; irx < num_mesh_x_; irx++) {
+        int ipr = irx % ParallelMPI::size_;
+        list_num_mesh_x_pr_[ipr] += 1;
+    }
+
+    if (ParallelMPI::rank_ == 0) {
+        mesh_func_r_ = new CNumber *[num_mesh_x_];
+        for (int irx = 0; irx < num_mesh_x_; irx++) {
+            mesh_func_r_[irx] = new CNumber[num_mesh_y_];
+        }
+    }
+
     int num_mesh_x_pr =
         list_num_mesh_x_pr_[ParallelMPI::rank_];
     if (num_mesh_x_pr > 0) {
@@ -139,14 +118,13 @@ void Transformer2D::init(int num_in_mesh_x,
         }
     }
 
-    initialized_ = true;
-    make();
+    have_mesh_func_ = true;
 
     return;
 }
 
 void Transformer2D::make() {
-    if (!initialized_) {
+    if (!have_mesh_func_) {
         return;
     }
 
@@ -396,7 +374,7 @@ void Transformer2D::export_func_r(std::string name_file,
 }
 
 void Transformer2D::reset() {
-    if (!initialized_) {
+    if (!have_mesh_func_) {
         return;
     }
 
@@ -426,6 +404,7 @@ void Transformer2D::reset() {
     num_mmid_x_ = 0;
     num_mmid_y_ = 0;
 
+    have_mesh_func_ = false;
     initialized_ = false;
 
     return;

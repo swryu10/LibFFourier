@@ -5,81 +5,32 @@ namespace FFourier {
 
 void Transformer1D::init(int num_in_mesh,
                          CNumber *mesh_in_func_x) {
-    reset();
-
-    if (num_in_mesh < 2) {
+    alloc_mesh_func(num_in_mesh);
+    if (!have_mesh_func_) {
         return;
     }
 
-    num_mesh_ = num_in_mesh;
-    factor_inv_ =
-        1. / static_cast<double>(num_mesh_);
-
-    z_unit_[0] = cos(2. * M_PI /
-                     static_cast<double>(num_mesh_));
-    z_unit_[1] = sin(2. * M_PI /
-                     static_cast<double>(num_mesh_));
-
-    list_num_mesh_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
-        list_num_mesh_pr_[ipr] = 0;
-    }
-
-    for (int ix = 0; ix < num_mesh_; ix++) {
-        int ipr = ix % ParallelMPI::size_;
-        list_num_mesh_pr_[ipr] += 1;
-    }
-
     if (ParallelMPI::rank_ == 0) {
-        mesh_func_x_ = new CNumber[num_mesh_];
-
         for (int ix = 0; ix < num_mesh_; ix++) {
             mesh_func_x_[ix] = mesh_in_func_x[ix];
         }
     }
 
-    int num_mesh_pr =
-        list_num_mesh_pr_[ParallelMPI::rank_];
-    if (num_mesh_pr > 0) {
-        mesh_func_k_pr_ = new CNumber[num_mesh_pr];
-    }
+    make();
 
     initialized_ = true;
-    make();
 
     return;
 }
 
 void Transformer1D::init(int num_in_mesh,
                          CNumber (*ptr_in_func_x)(double)) {
-    reset();
-
-    if (num_in_mesh < 2) {
+    alloc_mesh_func(num_in_mesh);
+    if (!have_mesh_func_) {
         return;
     }
 
-    num_mesh_ = num_in_mesh;
-    factor_inv_ =
-        1. / static_cast<double>(num_mesh_);
-
-    z_unit_[0] = cos(2. * M_PI /
-                     static_cast<double>(num_mesh_));
-    z_unit_[1] = sin(2. * M_PI /
-                     static_cast<double>(num_mesh_));
-
-    list_num_mesh_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
-        list_num_mesh_pr_[ipr] = 0;
-    }
-
-    for (int ix = 0; ix < num_mesh_; ix++) {
-        int ipr = ix % ParallelMPI::size_;
-        list_num_mesh_pr_[ipr] += 1;
-    }
-
     if (ParallelMPI::rank_ == 0) {
-        mesh_func_x_ = new CNumber[num_mesh_];
-
         for (int ix = 0; ix < num_mesh_; ix++) {
             double x_now =
                 static_cast<double>(ix) /
@@ -88,20 +39,56 @@ void Transformer1D::init(int num_in_mesh,
         }
     }
 
+    make();
+
+    initialized_ = true;
+
+    return;
+}
+
+void Transformer1D::alloc_mesh_func(int num_in_mesh) {
+    reset();
+
+    if (num_in_mesh < 2) {
+        return;
+    }
+
+    num_mesh_ = num_in_mesh;
+    factor_inv_ =
+        1. / static_cast<double>(num_mesh_);
+
+    z_unit_[0] = cos(2. * M_PI /
+                     static_cast<double>(num_mesh_));
+    z_unit_[1] = sin(2. * M_PI /
+                     static_cast<double>(num_mesh_));
+
+    list_num_mesh_pr_ = new int[ParallelMPI::size_];
+    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
+        list_num_mesh_pr_[ipr] = 0;
+    }
+
+    for (int ix = 0; ix < num_mesh_; ix++) {
+        int ipr = ix % ParallelMPI::size_;
+        list_num_mesh_pr_[ipr] += 1;
+    }
+
+    if (ParallelMPI::rank_ == 0) {
+        mesh_func_x_ = new CNumber[num_mesh_];
+    }
+
     int num_mesh_pr =
         list_num_mesh_pr_[ParallelMPI::rank_];
     if (num_mesh_pr > 0) {
         mesh_func_k_pr_ = new CNumber[num_mesh_pr];
     }
 
-    initialized_ = true;
-    make();
+    have_mesh_func_ = true;
 
     return;
 }
 
 void Transformer1D::make() {
-    if (!initialized_) {
+    if (!have_mesh_func_) {
         return;
     }
 
@@ -271,7 +258,7 @@ void Transformer1D::export_func_r(std::string name_file,
 }
 
 void Transformer1D::reset() {
-    if (!initialized_) {
+    if (!have_mesh_func_) {
         return;
     }
 
@@ -287,6 +274,7 @@ void Transformer1D::reset() {
 
     num_mesh_ = 0;
 
+    have_mesh_func_ = false;
     initialized_ = false;
 
     return;
