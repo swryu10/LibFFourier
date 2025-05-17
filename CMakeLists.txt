@@ -15,7 +15,6 @@ if(MPI_FOUND)
     set(CMAKE_CXX_LINKER_FLAGS "${CMAKE_CXX_LINKER_FLAGS} ${MPI_LINK_FLAGS}")
 endif()
 target_sources(FFourier PUBLIC ${PROJECT_SOURCE_DIR}/src/Parallel.cpp
-                               ${PROJECT_SOURCE_DIR}/src/CNumber.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer2D.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer3D.cpp)
@@ -30,8 +29,7 @@ if(MPI_FOUND)
 endif()
 add_executable(test_FTransformer1D ${PROJECT_SOURCE_DIR}/src/test_FTransformer1D.cpp
                                    ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
-                                   ${PROJECT_SOURCE_DIR}/src/Parallel.cpp
-                                   ${PROJECT_SOURCE_DIR}/src/CNumber.cpp)
+                                   ${PROJECT_SOURCE_DIR}/src/Parallel.cpp)
 set_target_properties(test_FTransformer1D PROPERTIES OUTPUT_NAME "test_FTransformer1D.exec")
 target_include_directories(test_FTransformer1D PUBLIC "${PROJECT_SOURCE_DIR}/include")
 if(MPI_FOUND)
@@ -45,8 +43,7 @@ endif()
 add_executable(test_FTransformer2D ${PROJECT_SOURCE_DIR}/src/test_FTransformer2D.cpp
                                    ${PROJECT_SOURCE_DIR}/src/FTransformer2D.cpp
                                    ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
-                                   ${PROJECT_SOURCE_DIR}/src/Parallel.cpp
-                                   ${PROJECT_SOURCE_DIR}/src/CNumber.cpp)
+                                   ${PROJECT_SOURCE_DIR}/src/Parallel.cpp)
 set_target_properties(test_FTransformer2D PROPERTIES OUTPUT_NAME "test_FTransformer2D.exec")
 target_include_directories(test_FTransformer2D PUBLIC "${PROJECT_SOURCE_DIR}/include")
 if(MPI_FOUND)
