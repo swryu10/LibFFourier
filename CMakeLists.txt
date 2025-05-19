@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.31)
 
 project(FFourier)
+include(FetchContent)
+FetchContent_Declare(
+    SciBaseCXX
+    GIT_REPOSITORY https://github.com/swryu10/SciBaseCXX.git
+    GIT_TAG origin/main
+)
+FetchContent_MakeAvailable(SciBaseCXX)
 add_library(FFourier STATIC)
 find_package(OpenMP)
 if(OPENMP_FOUND)
@@ -18,7 +25,8 @@ target_sources(FFourier PUBLIC ${PROJECT_SOURCE_DIR}/src/Parallel.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer2D.cpp
                                ${PROJECT_SOURCE_DIR}/src/FTransformer3D.cpp)
-target_include_directories(FFourier PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(FFourier PUBLIC ${PROJECT_SOURCE_DIR}/include
+                                           ${FETCHCONTENT_BASE_DIR}/scibasecxx-src/include)
 if(MPI_FOUND)
     target_link_libraries(FFourier PUBLIC ${MPI_LIBRARIES})
 endif()
@@ -31,7 +39,8 @@ add_executable(test_FTransformer1D ${PROJECT_SOURCE_DIR}/src/test_FTransformer1D
                                    ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
                                    ${PROJECT_SOURCE_DIR}/src/Parallel.cpp)
 set_target_properties(test_FTransformer1D PROPERTIES OUTPUT_NAME "test_FTransformer1D.exec")
-target_include_directories(test_FTransformer1D PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(test_FTransformer1D PUBLIC ${PROJECT_SOURCE_DIR}/include
+                                                      ${FETCHCONTENT_BASE_DIR}/scibasecxx-src/include)
 if(MPI_FOUND)
     target_link_libraries(test_FTransformer1D PUBLIC ${MPI_LIBRARIES})
 endif()
@@ -45,7 +54,8 @@ add_executable(test_FTransformer2D ${PROJECT_SOURCE_DIR}/src/test_FTransformer2D
                                    ${PROJECT_SOURCE_DIR}/src/FTransformer1D.cpp
                                    ${PROJECT_SOURCE_DIR}/src/Parallel.cpp)
 set_target_properties(test_FTransformer2D PROPERTIES OUTPUT_NAME "test_FTransformer2D.exec")
-target_include_directories(test_FTransformer2D PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(test_FTransformer2D PUBLIC ${PROJECT_SOURCE_DIR}/include
+                                                      ${FETCHCONTENT_BASE_DIR}/scibasecxx-src/include)
 if(MPI_FOUND)
     target_link_libraries(test_FTransformer2D PUBLIC ${MPI_LIBRARIES})
 endif()
@@ -56,7 +66,8 @@ if(MPI_FOUND)
 endif()
 add_executable(test_FTransformer3D ${PROJECT_SOURCE_DIR}/src/test_FTransformer3D.cpp)
 set_target_properties(test_FTransformer3D PROPERTIES OUTPUT_NAME "test_FTransformer3D.exec")
-target_include_directories(test_FTransformer3D PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_include_directories(test_FTransformer3D PUBLIC ${PROJECT_SOURCE_DIR}/include
+                                                      ${FETCHCONTENT_BASE_DIR}/scibasecxx-src/include)
 target_link_libraries(test_FTransformer3D PUBLIC FFourier)
 if(MPI_FOUND)
     target_link_libraries(test_FTransformer3D PUBLIC ${MPI_LIBRARIES})
