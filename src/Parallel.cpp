@@ -1,11 +1,15 @@
 #include"Parallel.h"
 
-namespace ParallelMPI {
+int ParallelMPI::size_ = 1;
+int ParallelMPI::rank_ = 0;
 
-int size_ = 1;
-int rank_ = 0;
+bool ParallelMPI::flag_init_ = false;
 
-void func_ini(int argc, char *argv[]) {
+void ParallelMPI::func_ini(int argc, char *argv[]) {
+    if (flag_init_) {
+        return;
+    }
+
     #ifdef _MPI
     MPI_Init(&argc, &argv);
 
@@ -13,15 +17,21 @@ void func_ini(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &rank_);
     #endif
 
+    flag_init_ = true;
+
     return;
 }
 
-void func_fin() {
+void ParallelMPI::func_fin() {
+    if (!flag_init_) {
+        return;
+    }
+
     #ifdef _MPI
     MPI_Finalize();
     #endif
 
+    flag_init_ = false;
+
     return;
 }
-
-} // end namespace ParallelMPI

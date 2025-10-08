@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<string>
+#include"Parallel.h"
 #include"FTransformer3D.h"
 
 int n_mesh_z = 16;
@@ -19,19 +20,19 @@ int main(int argc, char *argv[]) {
     ParallelMPI::func_ini(argc, argv);
     #ifdef _MPI
     fprintf(stdout, "MPI : size = %d, rank = %d\n",
-            ParallelMPI::size_, ParallelMPI::rank_);
+            ParallelMPI::size(), ParallelMPI::rank());
     #endif
 
     CNumber (*ptr_func_r)(double, double, double);
     FFourier::Transformer3D dft;
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "  signal_rectangle\n");
     }
     ptr_func_r = &signal_rectangle;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "    init\n");
     }
     std::string name_rectangle =
@@ -40,17 +41,17 @@ int main(int argc, char *argv[]) {
                       n_pt_x, n_pt_y,
                       0, 0.15,
                       ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "    export_func_r\n");
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "  signal_gaussians\n");
     }
     ptr_func_r = &signal_gaussians;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "    init\n");
     }
     std::string name_gaussians =
@@ -59,17 +60,17 @@ int main(int argc, char *argv[]) {
                       n_pt_x, n_pt_y,
                       0, 0.15,
                       ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "    export_func_r\n");
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "  signal_multi_tri\n");
     }
     ptr_func_r = &signal_multi_tri;
     dft.init(n_mesh_z, n_mesh_x, n_mesh_y,
              ptr_func_r);
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(stdout, "    init\n");
     }
     for (int ikz = 0; ikz < n_mesh_z; ikz++) {
@@ -78,7 +79,7 @@ int main(int argc, char *argv[]) {
                 CNumber func_k =
                     dft.get_func_k(ikz, ikx, iky);
 
-                if (ParallelMPI::rank_ == 0) {
+                if (ParallelMPI::rank() == 0) {
                     if (func_k.get_abs() > 1.0e-2) {
                         fprintf(stdout,
                                 "    ikx = %d, iky = %d\n",

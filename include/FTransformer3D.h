@@ -2,13 +2,12 @@
 #define _FTRANSFORMER3D_H_
 
 #include<string>
-#include"Parallel.h"
 #include"CNumber.h"
 
 namespace FFourier {
 
 class Transformer3D {
-  private :
+  private:
 
     /* number of bins
      *   num_mesh_z_ in z
@@ -63,7 +62,7 @@ class Transformer3D {
      * which is called in init function */
     void make();
 
-  public :
+  public:
 
     // constructor
     Transformer3D() {

@@ -2,13 +2,12 @@
 #define _FTRANSFORMER2D_H_
 
 #include<string>
-#include"Parallel.h"
 #include"CNumber.h"
 
 namespace FFourier {
 
 class Transformer2D {
-  private :
+  private:
 
     /* number of bins
      *   num_mesh_x_ in x
@@ -55,7 +54,7 @@ class Transformer2D {
      * which is called in init function */
     void make();
 
-  public :
+  public:
 
     // constructor
     Transformer2D() {

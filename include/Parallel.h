@@ -8,23 +8,30 @@
 #include<mpi.h>
 #endif
 
-namespace ParallelMPI {
+class ParallelMPI {
+  private:
 
-// number of processors in MPI
-extern int size_;
-/* processor id in MPI
- * which can be 0 ... size_ - 1 */
-extern int rank_;
+    // number of processors in MPI
+    static int size_;
+    /* processor id in MPI
+     * which can be 0 ... size_ - 1 */
+    static int rank_;
 
-/* initialize MPI
- * which can be called at the beginning
- * of main function */
-void func_ini(int argc, char *argv[]);
-/* finalize MPI
- * which can be called at the end
- * of main function */
-void func_fin();
+    static bool flag_init_;
 
-} // end namespace ParallelMPI
+  public:
+
+    /* initialize MPI
+     * which can be called at the beginning
+     * of main function */
+    static void func_ini(int argc, char *argv[]);
+    /* finalize MPI
+     * which can be called at the end
+     * of main function */
+    static void func_fin();
+
+    static int size() {return size_;}
+    static int rank() {return rank_;}
+};
  
 #endif

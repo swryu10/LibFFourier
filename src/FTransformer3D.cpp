@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<math.h>
+#include"Parallel.h"
 #include"FTransformer1D.h"
 #include"FTransformer2D.h"
 #include"FTransformer3D.h"
@@ -17,7 +18,7 @@ void Transformer3D::init(int num_in_mesh_z,
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int irz = 0; irz < num_mesh_z_; irz++) {
             for (int irx = 0; irx < num_mesh_x_; irx++) {
                 for (int iry = 0; iry < num_mesh_y_; iry++) {
@@ -52,7 +53,7 @@ void Transformer3D::init(int num_in_mesh_z,
     double nd_mesh_x = static_cast<double>(num_mesh_x_);
     double nd_mesh_y = static_cast<double>(num_mesh_y_);
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int irz = 0; irz < num_mesh_z_; irz++) {
             double z_now =
                 static_cast<double>(irz) / nd_mesh_z;
@@ -117,17 +118,17 @@ void Transformer3D::alloc_mesh_func(int num_in_mesh_z,
     num_mmid_x_ = (num_mesh_x_ + (num_mesh_x_ % 2)) / 2;
     num_mmid_y_ = (num_mesh_y_ + (num_mesh_y_ % 2)) / 2;
 
-    list_num_mesh_z_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
+    list_num_mesh_z_pr_ = new int[ParallelMPI::size()];
+    for (int ipr = 0; ipr < ParallelMPI::size(); ipr++) {
         list_num_mesh_z_pr_[ipr] = 0;
     }
 
     for (int irz = 0; irz < num_mesh_z_; irz++) {
-        int ipr = irz % ParallelMPI::size_;
+        int ipr = irz % ParallelMPI::size();
         list_num_mesh_z_pr_[ipr] += 1;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         mesh_func_r_ = new CNumber **[num_mesh_z_];
         for (int irz = 0; irz < num_mesh_z_; irz++) {
             mesh_func_r_[irz] = new CNumber *[num_mesh_x_];
@@ -138,7 +139,7 @@ void Transformer3D::alloc_mesh_func(int num_in_mesh_z,
     }
 
     int num_mesh_z_pr =
-        list_num_mesh_z_pr_[ParallelMPI::rank_];
+        list_num_mesh_z_pr_[ParallelMPI::rank()];
     if (num_mesh_z_pr > 0) {
         mesh_func_k_pr_ = new CNumber **[num_mesh_z_pr];
         for (int ikzpr = 0; ikzpr < num_mesh_z_pr; ikzpr++) {
@@ -171,7 +172,7 @@ void Transformer3D::make() {
 
     for (int irz = 0; irz < num_mesh_z_; irz++) {
         CNumber **ptr_mesh_fn_xy = NULL;
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             ptr_mesh_fn_xy = mesh_func_r_[irz];
         }
 
@@ -186,7 +187,7 @@ void Transformer3D::make() {
 
     Transformer1D dft_all;
     CNumber *mesh_func_z;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         mesh_func_z = new CNumber [num_mesh_z_];
     }
 
@@ -201,7 +202,7 @@ void Transformer3D::make() {
             CNumber cnum_func_z =
                 ptr_dft_xy[irz].get_func_k(ikx, iky);
 
-            if (ParallelMPI::rank_ == 0) {
+            if (ParallelMPI::rank() == 0) {
                 mesh_func_z[irz] = cnum_func_z;
             }
         }
@@ -214,7 +215,7 @@ void Transformer3D::make() {
         #endif
 
         CNumber *list_func_k;
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             list_func_k = new CNumber[num_mesh_z_];
         }
 
@@ -222,18 +223,18 @@ void Transformer3D::make() {
             CNumber cnum_func_k =
                 dft_all.get_func_k(ikz);
 
-            if (ParallelMPI::rank_ == 0) {
+            if (ParallelMPI::rank() == 0) {
                 list_func_k[ikz] = cnum_func_k;
             }
         }
 
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             for (int ikz = 0; ikz < num_mesh_z_; ikz++) {
-                int ipr_tar = ikz % ParallelMPI::size_;
+                int ipr_tar = ikz % ParallelMPI::size();
                 if (ipr_tar == 0) {
                     int ikzpr =
-                        (ikz - ParallelMPI::rank_) /
-                        ParallelMPI::size_;
+                        (ikz - ParallelMPI::rank()) /
+                        ParallelMPI::size();
 
                     mesh_func_k_pr_[ikzpr][ikx][iky] =
                         list_func_k[ikz];
@@ -244,7 +245,7 @@ void Transformer3D::make() {
                     set_func_k[1] = list_func_k[ikz][1];
 
                     tag = (num_mesh_z_ * ikxy + ikz) *
-                          ParallelMPI::size_ +
+                          ParallelMPI::size() +
                           ipr_tar;
                     MPI_Send(set_func_k, 2, MPI_DOUBLE,
                              ipr_tar, tag, MPI_COMM_WORLD);
@@ -258,22 +259,22 @@ void Transformer3D::make() {
         } else {
             #ifdef _MPI
             for (int ikz = 0; ikz < num_mesh_z_; ikz++) {
-                int ipr_tar = ikz % ParallelMPI::size_;
-                if (ParallelMPI::rank_ != ipr_tar) {
+                int ipr_tar = ikz % ParallelMPI::size();
+                if (ParallelMPI::rank() != ipr_tar) {
                     continue;
                 }
 
                 double *set_func_k = new double[2];
 
                 tag = (num_mesh_z_ * ikxy + ikz) *
-                      ParallelMPI::size_ +
+                      ParallelMPI::size() +
                       ipr_tar;
                 MPI_Recv(set_func_k, 2, MPI_DOUBLE,
                          0, tag, MPI_COMM_WORLD, &status);
 
                 int ikzpr =
-                    (ikz - ParallelMPI::rank_) /
-                    ParallelMPI::size_;
+                    (ikz - ParallelMPI::rank()) /
+                    ParallelMPI::size();
                 mesh_func_k_pr_[ikzpr][ikx][iky][0] =
                     set_func_k[0];
                 mesh_func_k_pr_[ikzpr][ikx][iky][1] =
@@ -285,7 +286,7 @@ void Transformer3D::make() {
         }
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         delete [] mesh_func_z;
     }
 
@@ -318,14 +319,14 @@ void Transformer3D::export_func_r(std::string name_file,
 
     int flag_file = 0;
     FILE *ptr_fout;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         ptr_fout = fopen(name_file.c_str(), "w");
         if (ptr_fout != NULL) {
             flag_file = 1;
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 99;
             MPI_Send(&flag_file, 1, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -333,7 +334,7 @@ void Transformer3D::export_func_r(std::string name_file,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 99;
+        tag = ParallelMPI::rank() * 100 + 99;
         MPI_Recv(&flag_file, 1, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -348,7 +349,7 @@ void Transformer3D::export_func_r(std::string name_file,
 
     CNumber **tab_func_r_dft;
     CNumber **tab_func_r_ini;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         tab_func_r_dft = new CNumber *[num_in_pt_x];
         tab_func_r_ini = new CNumber *[num_in_pt_x];
 
@@ -387,7 +388,7 @@ void Transformer3D::export_func_r(std::string name_file,
                            &cnum_df_dx_dft,
                            &cnum_df_dy_dft);
 
-            if (ParallelMPI::rank_ == 0) {
+            if (ParallelMPI::rank() == 0) {
                 tab_func_r_dft[ix][iy] = cnum_func_dft;
                 if (ptr_in_func_r != NULL) {
                     tab_func_r_ini[ix][iy] =
@@ -401,7 +402,7 @@ void Transformer3D::export_func_r(std::string name_file,
 
     delete [] xvec_now;
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         if (axis_z % 3 == 1) {
             fprintf(ptr_fout, "# x = %e\n", z_plane);
             fprintf(ptr_fout, "# num_pt_y = %d, num_pt_z = %d\n",
@@ -458,7 +459,7 @@ void Transformer3D::reset() {
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int irz = 0; irz < num_mesh_z_; irz++) {
             for (int irx = 0; irx < num_mesh_x_; irx++) {
                 delete [] mesh_func_r_[irz][irx];
@@ -471,7 +472,7 @@ void Transformer3D::reset() {
     }
 
     int num_mesh_z_pr =
-        list_num_mesh_z_pr_[ParallelMPI::rank_];
+        list_num_mesh_z_pr_[ParallelMPI::rank()];
     if (num_mesh_z_pr > 0) {
         for (int ikzpr = 0; ikzpr < num_mesh_z_pr; ikzpr++) {
             for (int ikx = 0; ikx < num_mesh_x_; ikx++) {
@@ -567,7 +568,7 @@ CNumber Transformer3D::get_func_r(double z_in,
     #endif
 
     int num_mesh_z_pr =
-        list_num_mesh_z_pr_[ParallelMPI::rank_];
+        list_num_mesh_z_pr_[ParallelMPI::rank()];
     int num_mesh_xy =
         num_mesh_x_ * num_mesh_y_;
 
@@ -596,8 +597,8 @@ CNumber Transformer3D::get_func_r(double z_in,
             #endif
 
             int ikz =
-                ParallelMPI::rank_ +
-                ParallelMPI::size_ * ikzpr;
+                ParallelMPI::rank() +
+                ParallelMPI::size() * ikzpr;
 
             #ifdef _OPENMP
             list_c_func[ikzpr][0] = 0.;
@@ -634,8 +635,8 @@ CNumber Transformer3D::get_func_r(double z_in,
     #ifdef _MPI
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (ParallelMPI::rank_ == 0) {
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+    if (ParallelMPI::rank() == 0) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             double *set_func = new double[2];
 
             tag = ipr * 100 + 12;
@@ -652,7 +653,7 @@ CNumber Transformer3D::get_func_r(double z_in,
         set_func[0] = cnum_ret[0];
         set_func[1] = cnum_ret[1];
 
-        tag = ParallelMPI::rank_ * 100 + 12;
+        tag = ParallelMPI::rank() * 100 + 12;
         MPI_Send(set_func, 2, MPI_DOUBLE,
                  0, tag, MPI_COMM_WORLD);
 
@@ -667,7 +668,7 @@ CNumber Transformer3D::get_func_r(double z_in,
     flag_df_dr[0] = 0;
     flag_df_dr[1] = 0;
     flag_df_dr[2] = 0;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         if (ptr_df_dz != NULL) {
             flag_df_dr[0] = 1;
         }
@@ -681,7 +682,7 @@ CNumber Transformer3D::get_func_r(double z_in,
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 10;
             MPI_Send(flag_df_dr, 3, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -689,7 +690,7 @@ CNumber Transformer3D::get_func_r(double z_in,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 10;
+        tag = ParallelMPI::rank() * 100 + 10;
         MPI_Recv(flag_df_dr, 3, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -739,8 +740,8 @@ CNumber Transformer3D::get_func_r(double z_in,
                 #endif
 
                 int ikz =
-                    ParallelMPI::rank_ +
-                    ParallelMPI::size_ * ikzpr;
+                    ParallelMPI::rank() +
+                    ParallelMPI::size() * ikzpr;
 
                 int jkz = ikz;
                 if (ikz >= num_mmid_z_) {
@@ -833,8 +834,8 @@ CNumber Transformer3D::get_func_r(double z_in,
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (ParallelMPI::rank_ == 0) {
-            for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        if (ParallelMPI::rank() == 0) {
+            for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
                 double *set_df_dr = new double[6];
 
                 tag = ipr * 100 + 13;
@@ -859,7 +860,7 @@ CNumber Transformer3D::get_func_r(double z_in,
             set_df_dr[4] = cnum_df_dy[0];
             set_df_dr[5] = cnum_df_dy[1];
 
-            tag = ParallelMPI::rank_ * 100 + 13;
+            tag = ParallelMPI::rank() * 100 + 13;
             MPI_Send(set_df_dr, 6, MPI_DOUBLE,
                      0, tag, MPI_COMM_WORLD);
 
@@ -876,7 +877,7 @@ CNumber Transformer3D::get_func_r(double z_in,
         }
         #endif
 
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             if (flag_df_dr[0] != 0) {
                 *ptr_df_dz = factor_inv_ * cnum_df_dz;
             }
@@ -917,7 +918,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
     flag_df_dr[0] = 0;
     flag_df_dr[1] = 0;
     flag_df_dr[2] = 0;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         if (ptr_df_dz != NULL) {
             flag_df_dr[0] = 1;
         }
@@ -931,7 +932,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 20;
             MPI_Send(flag_df_dr, 3, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -939,7 +940,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 20;
+        tag = ParallelMPI::rank() * 100 + 20;
         MPI_Recv(flag_df_dr, 3, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -961,7 +962,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
         cnum_df_dy[1] = 0.;
 
         int num_mesh_z_pr =
-            list_num_mesh_z_pr_[ParallelMPI::rank_];
+            list_num_mesh_z_pr_[ParallelMPI::rank()];
         int num_mesh_xy =
             num_mesh_x_ * num_mesh_y_;
 
@@ -994,8 +995,8 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
                 #endif
 
                 int ikz =
-                    ParallelMPI::rank_ +
-                    ParallelMPI::size_ * ikzpr;
+                    ParallelMPI::rank() +
+                    ParallelMPI::size() * ikzpr;
 
                 int jkz = ikz;
                 if (ikz >= num_mmid_z_) {
@@ -1088,8 +1089,8 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (ParallelMPI::rank_ == 0) {
-            for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        if (ParallelMPI::rank() == 0) {
+            for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
                 double *set_df_dr = new double[6];
 
                 tag = ipr * 100 + 23;
@@ -1114,7 +1115,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
             set_df_dr[4] = cnum_df_dy[0];
             set_df_dr[5] = cnum_df_dy[1];
 
-            tag = ParallelMPI::rank_ * 100 + 23;
+            tag = ParallelMPI::rank() * 100 + 23;
             MPI_Send(set_df_dr, 6, MPI_DOUBLE,
                      0, tag, MPI_COMM_WORLD);
 
@@ -1131,7 +1132,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
         }
         #endif
 
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             if (flag_df_dr[0] != 0) {
                 *ptr_df_dz = factor_inv_ * cnum_df_dz;
             }
@@ -1148,7 +1149,7 @@ CNumber Transformer3D::get_func_r(int irz, int irx, int iry,
 
     delete [] flag_df_dr;
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         return mesh_func_r_[jrz][jrx][jry];
     } else {
         CNumber cnum_ret;
@@ -1173,13 +1174,13 @@ CNumber Transformer3D::get_func_k(int ikz, int ikx, int iky) {
     cnum_ret[0] = 0.;
     cnum_ret[1] = 0.;
 
-    int ipr_src = jkz % ParallelMPI::size_;
+    int ipr_src = jkz % ParallelMPI::size();
 
-    if (ParallelMPI::rank_ == 0) {
-        if (ParallelMPI::rank_ == ipr_src) {
+    if (ParallelMPI::rank() == 0) {
+        if (ParallelMPI::rank() == ipr_src) {
             int jkzpr =
-                (jkz - ParallelMPI::rank_) /
-                ParallelMPI::size_;
+                (jkz - ParallelMPI::rank()) /
+                ParallelMPI::size();
 
             cnum_ret = mesh_func_k_pr_[jkzpr][jkx][jky];
         } else {
@@ -1197,11 +1198,11 @@ CNumber Transformer3D::get_func_k(int ikz, int ikx, int iky) {
             #endif
         }
     } else {
-        if (ParallelMPI::rank_ == ipr_src) {
+        if (ParallelMPI::rank() == ipr_src) {
             #ifdef _MPI
             int jkzpr =
-                (jkz - ParallelMPI::rank_) /
-                ParallelMPI::size_;
+                (jkz - ParallelMPI::rank()) /
+                ParallelMPI::size();
 
             double *set_func = new double[2];
             set_func[0] =

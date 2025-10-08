@@ -3,13 +3,12 @@
 
 #include<math.h>
 #include<string>
-#include"Parallel.h"
 #include"CNumber.h"
 
 namespace FFourier {
 
 class Transformer1D {
-  private :
+  private:
 
     /* number of bins
      * same for spatial (time) domain and
@@ -40,7 +39,7 @@ class Transformer1D {
      * which is called in init function */
     void make();
 
-  public :
+  public:
 
     // constructor
     Transformer1D() {

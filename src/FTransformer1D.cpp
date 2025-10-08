@@ -1,4 +1,5 @@
 #include<stdio.h>
+#include"Parallel.h"
 #include"FTransformer1D.h"
 
 namespace FFourier {
@@ -10,7 +11,7 @@ void Transformer1D::init(int num_in_mesh,
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int ix = 0; ix < num_mesh_; ix++) {
             mesh_func_x_[ix] = mesh_in_func_x[ix];
         }
@@ -30,7 +31,7 @@ void Transformer1D::init(int num_in_mesh,
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int ix = 0; ix < num_mesh_; ix++) {
             double x_now =
                 static_cast<double>(ix) /
@@ -62,22 +63,22 @@ void Transformer1D::alloc_mesh_func(int num_in_mesh) {
     z_unit_[1] = sin(2. * M_PI /
                      static_cast<double>(num_mesh_));
 
-    list_num_mesh_pr_ = new int[ParallelMPI::size_];
-    for (int ipr = 0; ipr < ParallelMPI::size_; ipr++) {
+    list_num_mesh_pr_ = new int[ParallelMPI::size()];
+    for (int ipr = 0; ipr < ParallelMPI::size(); ipr++) {
         list_num_mesh_pr_[ipr] = 0;
     }
 
     for (int ix = 0; ix < num_mesh_; ix++) {
-        int ipr = ix % ParallelMPI::size_;
+        int ipr = ix % ParallelMPI::size();
         list_num_mesh_pr_[ipr] += 1;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         mesh_func_x_ = new CNumber[num_mesh_];
     }
 
     int num_mesh_pr =
-        list_num_mesh_pr_[ParallelMPI::rank_];
+        list_num_mesh_pr_[ParallelMPI::rank()];
     if (num_mesh_pr > 0) {
         mesh_func_k_pr_ = new CNumber[num_mesh_pr];
     }
@@ -97,7 +98,7 @@ void Transformer1D::make() {
     MPI_Status status;
     #endif
 
-    int num_mesh_pr = list_num_mesh_pr_[ParallelMPI::rank_];
+    int num_mesh_pr = list_num_mesh_pr_[ParallelMPI::rank()];
 
     CNumber *mesh_fn_x = new CNumber[num_mesh_];
 
@@ -105,7 +106,7 @@ void Transformer1D::make() {
     double *set_fn_x = new double[2 * num_mesh_];
     #endif
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         for (int ix = 0; ix < num_mesh_; ix++) {
             mesh_fn_x[ix] = mesh_func_x_[ix];
 
@@ -116,7 +117,7 @@ void Transformer1D::make() {
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 1;
             MPI_Send(set_fn_x, 2 * num_mesh_, MPI_DOUBLE,
                      ipr, tag, MPI_COMM_WORLD);
@@ -124,7 +125,7 @@ void Transformer1D::make() {
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 1;
+        tag = ParallelMPI::rank() * 100 + 1;
         MPI_Recv(set_fn_x, 2 * num_mesh_, MPI_DOUBLE,
                  0, tag, MPI_COMM_WORLD, &status);
 
@@ -165,8 +166,8 @@ void Transformer1D::make() {
             #endif
 
             int ik =
-                ParallelMPI::rank_ +
-                ParallelMPI::size_ * ikpr;
+                ParallelMPI::rank() +
+                ParallelMPI::size() * ikpr;
             mesh_func_k_pr_[ikpr] = next(ik, num_mesh_,
                                          mesh_fn_x);
         }
@@ -197,14 +198,14 @@ void Transformer1D::export_func_r(std::string name_file,
 
     int flag_file = 0;
     FILE *ptr_fout;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         ptr_fout = fopen(name_file.c_str(), "w");
         if (ptr_fout != NULL) {
             flag_file = 1;
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 99;
             MPI_Send(&flag_file, 1, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -212,7 +213,7 @@ void Transformer1D::export_func_r(std::string name_file,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 99;
+        tag = ParallelMPI::rank() * 100 + 99;
         MPI_Recv(&flag_file, 1, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -222,7 +223,7 @@ void Transformer1D::export_func_r(std::string name_file,
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fprintf(ptr_fout, "# num_point = %d\n", num_in_pt_x);
         fprintf(ptr_fout, "# x    f.re    f.im    df_dx.re    df_dx.im");
         fprintf(ptr_fout, "    f_ini.re    f_ini.im\n");
@@ -231,13 +232,13 @@ void Transformer1D::export_func_r(std::string name_file,
     for (int ix = 0; ix < num_in_pt_x; ix++) {
         double x_now = static_cast<double>(ix) /
                        static_cast<double>(num_in_pt_x);
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             fprintf(ptr_fout, "    %e", x_now);
         }
         CNumber cnum_df_dx_dft;
         CNumber cnum_func_dft =
             get_func_r(x_now, &cnum_df_dx_dft);
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             fprintf(ptr_fout, "    %e    %e    %e    %e",
                     cnum_func_dft[0], cnum_func_dft[1],
                     cnum_df_dx_dft[0], cnum_df_dx_dft[1]);
@@ -250,7 +251,7 @@ void Transformer1D::export_func_r(std::string name_file,
         }
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         fclose(ptr_fout);
     }
 
@@ -262,11 +263,11 @@ void Transformer1D::reset() {
         return;
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         delete [] mesh_func_x_;
     }
 
-    if (list_num_mesh_pr_[ParallelMPI::rank_] > 0) {
+    if (list_num_mesh_pr_[ParallelMPI::rank()] > 0) {
         delete [] mesh_func_k_pr_;
     }
 
@@ -348,7 +349,7 @@ CNumber Transformer1D::get_func_r(double x_in,
     #endif
 
     int num_mesh_pr =
-        list_num_mesh_pr_[ParallelMPI::rank_];
+        list_num_mesh_pr_[ParallelMPI::rank()];
 
     #ifdef _OPENMP
     CNumber *list_c_func =
@@ -375,8 +376,8 @@ CNumber Transformer1D::get_func_r(double x_in,
             #endif
 
             int ik =
-                ParallelMPI::rank_ +
-                ParallelMPI::size_ * ikpr;
+                ParallelMPI::rank() +
+                ParallelMPI::size() * ikpr;
             int jk = ik;
             if (2 * ik >= num_mesh_) {
                 jk = ik - num_mesh_;
@@ -403,8 +404,8 @@ CNumber Transformer1D::get_func_r(double x_in,
     #ifdef _MPI
     MPI_Barrier(MPI_COMM_WORLD);
 
-    if (ParallelMPI::rank_ == 0) {
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+    if (ParallelMPI::rank() == 0) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             double *set_func = new double[2];
 
             tag = ipr * 100 + 12;
@@ -421,7 +422,7 @@ CNumber Transformer1D::get_func_r(double x_in,
         set_func[0] = cnum_ret[0];
         set_func[1] = cnum_ret[1];
 
-        tag = ParallelMPI::rank_ * 100 + 12;
+        tag = ParallelMPI::rank() * 100 + 12;
         MPI_Send(set_func, 2, MPI_DOUBLE,
                  0, tag, MPI_COMM_WORLD);
 
@@ -433,13 +434,13 @@ CNumber Transformer1D::get_func_r(double x_in,
     #endif
 
     int flag_df_dx = 0;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         if (ptr_df_dx != NULL) {
             flag_df_dx = 1;
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 10;
             MPI_Send(&flag_df_dx, 1, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -447,7 +448,7 @@ CNumber Transformer1D::get_func_r(double x_in,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 10;
+        tag = ParallelMPI::rank() * 100 + 10;
         MPI_Recv(&flag_df_dx, 1, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -483,8 +484,8 @@ CNumber Transformer1D::get_func_r(double x_in,
                 #endif
 
                 int ik =
-                    ParallelMPI::rank_ +
-                    ParallelMPI::size_ * ikpr;
+                    ParallelMPI::rank() +
+                    ParallelMPI::size() * ikpr;
                 int jk = ik;
                 if (2 * ik >= num_mesh_) {
                     jk = ik - num_mesh_;
@@ -520,8 +521,8 @@ CNumber Transformer1D::get_func_r(double x_in,
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (ParallelMPI::rank_ == 0) {
-            for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        if (ParallelMPI::rank() == 0) {
+            for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
                 double *set_df_dx = new double[2];
 
                 tag = ipr * 100 + 13;
@@ -538,7 +539,7 @@ CNumber Transformer1D::get_func_r(double x_in,
             set_df_dx[0] = cnum_df_dx[0];
             set_df_dx[1] = cnum_df_dx[1];
 
-            tag = ParallelMPI::rank_ * 100 + 13;
+            tag = ParallelMPI::rank() * 100 + 13;
             MPI_Send(set_df_dx, 2, MPI_DOUBLE,
                      0, tag, MPI_COMM_WORLD);
 
@@ -549,7 +550,7 @@ CNumber Transformer1D::get_func_r(double x_in,
         }
         #endif
 
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             *ptr_df_dx = factor_inv_ * cnum_df_dx;
         }
     }
@@ -567,13 +568,13 @@ CNumber Transformer1D::get_func_r(int ix,
     #endif
 
     int flag_df_dx = 0;
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         if (ptr_df_dx != NULL) {
             flag_df_dx = 1;
         }
 
         #ifdef _MPI
-        for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
             tag = ipr * 100 + 20;
             MPI_Send(&flag_df_dx, 1, MPI_INT,
                      ipr, tag, MPI_COMM_WORLD);
@@ -581,7 +582,7 @@ CNumber Transformer1D::get_func_r(int ix,
         #endif
     } else {
         #ifdef _MPI
-        tag = ParallelMPI::rank_ * 100 + 20;
+        tag = ParallelMPI::rank() * 100 + 20;
         MPI_Recv(&flag_df_dx, 1, MPI_INT,
                  0, tag, MPI_COMM_WORLD, &status);
         #endif
@@ -593,7 +594,7 @@ CNumber Transformer1D::get_func_r(int ix,
         cnum_df_dx[1] = 0.;
 
         int num_mesh_pr =
-            list_num_mesh_pr_[ParallelMPI::rank_];
+            list_num_mesh_pr_[ParallelMPI::rank()];
 
         #ifdef _OPENMP
         CNumber *list_c_df_dx =
@@ -620,8 +621,8 @@ CNumber Transformer1D::get_func_r(int ix,
                 #endif
 
                 int ik =
-                    ParallelMPI::rank_ +
-                    ParallelMPI::size_ * ikpr;
+                    ParallelMPI::rank() +
+                    ParallelMPI::size() * ikpr;
                 int jk = ik;
                 if (2 * ik >= num_mesh_) {
                     jk = ik - num_mesh_;
@@ -657,8 +658,8 @@ CNumber Transformer1D::get_func_r(int ix,
         #ifdef _MPI
         MPI_Barrier(MPI_COMM_WORLD);
 
-        if (ParallelMPI::rank_ == 0) {
-            for (int ipr = 1; ipr < ParallelMPI::size_; ipr++) {
+        if (ParallelMPI::rank() == 0) {
+            for (int ipr = 1; ipr < ParallelMPI::size(); ipr++) {
                 double *set_df_dx = new double[2];
 
                 tag = ipr * 100 + 23;
@@ -675,7 +676,7 @@ CNumber Transformer1D::get_func_r(int ix,
             set_df_dx[0] = cnum_df_dx[0];
             set_df_dx[1] = cnum_df_dx[1];
 
-            tag = ParallelMPI::rank_ * 100 + 23;
+            tag = ParallelMPI::rank() * 100 + 23;
             MPI_Send(set_df_dx, 2, MPI_DOUBLE,
                      0, tag, MPI_COMM_WORLD);
 
@@ -686,12 +687,12 @@ CNumber Transformer1D::get_func_r(int ix,
         }
         #endif
 
-        if (ParallelMPI::rank_ == 0) {
+        if (ParallelMPI::rank() == 0) {
             *ptr_df_dx = factor_inv_ * cnum_df_dx;
         }
     }
 
-    if (ParallelMPI::rank_ == 0) {
+    if (ParallelMPI::rank() == 0) {
         return mesh_func_x_[jx];
     } else {
         CNumber cnum_ret;
@@ -714,13 +715,13 @@ CNumber Transformer1D::get_func_k(int ik) {
     cnum_ret[0] = 0.;
     cnum_ret[1] = 0.;
 
-    int ipr_src = jk % ParallelMPI::size_;
+    int ipr_src = jk % ParallelMPI::size();
 
-    if (ParallelMPI::rank_ == 0) {
-        if (ParallelMPI::rank_ == ipr_src) {
+    if (ParallelMPI::rank() == 0) {
+        if (ParallelMPI::rank() == ipr_src) {
             int jkpr =
-                (jk - ParallelMPI::rank_) /
-                ParallelMPI::size_;
+                (jk - ParallelMPI::rank()) /
+                ParallelMPI::size();
 
             cnum_ret = mesh_func_k_pr_[jkpr];
         } else {
@@ -738,11 +739,11 @@ CNumber Transformer1D::get_func_k(int ik) {
             #endif
         }
     } else {
-        if (ParallelMPI::rank_ == ipr_src) {
+        if (ParallelMPI::rank() == ipr_src) {
             #ifdef _MPI
             int jkpr =
-                (jk - ParallelMPI::rank_) /
-                ParallelMPI::size_;
+                (jk - ParallelMPI::rank()) /
+                ParallelMPI::size();
 
             double *set_func = new double[2];
             set_func[0] = mesh_func_k_pr_[jkpr][0];
